@@ -1,0 +1,23 @@
+---
+title: "Merging & manipulating data"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+# Merging (joins)
+
+# Reshaping (pivoting)
+
+# String manipulation & RegEx
+
+# Functional programming

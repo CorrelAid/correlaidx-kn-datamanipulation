@@ -1,0 +1,145 @@
+---
+title: "EDA & Data Cleaning"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+
+# https://www.bfro.net/
+bf <- readr::read_csv(here::here("data", "bigfoot.csv"))
+```
+
+# Basics
+
+![The data analysis process]("figures/process.png")
+
+Most of the time analyzing data is not *actually* spent analyzing it, but fighting it to be in the right format so you can analyze it! Often, data wrangling and exploratory analysis (plotting, summary statistics etc.) go hand in hand: you find problems or interesting patterns in your exploration, and then you fix or investigate them.
+
+## EDA
+
+First step is to get an overview of your data.
+
+```{r}
+tibble(bf)
+glimpse(bf)
+names(bf)
+```
+
+```{r}
+bf |> 
+  count(state) |> 
+  arrange(desc(n))
+```
+
+```{r}
+bf |> 
+  count(season) |> 
+  arrange(desc(n)) # what is "unknown"? Do these also miss dates?
+```
+
+## Cleaning
+
+```{r}
+bf |> 
+  filter(season == "Unknown") |> 
+  select(date, everything())
+
+# ^ No, there are at least some dates for which we can impute the season!
+```
+
+```{r}
+# If we are lazy, we can just convert the "Unknown"s to `NA`:
+bf |> 
+  mutate(season = ifelse(season == "Unknown", NA, season))
+```
+
+```{r}
+# But let's try to impute:
+bf |> 
+  filter(season == "Unknown") |> 
+  mutate(month = lubridate::month(date)) |> 
+  count(month)  # 28 can't be imputed...
+```
+
+```{r}
+bf <- 
+  bf |> 
+  mutate(
+    month = lubridate::month(date),
+    season = case_when(
+      season != "Unknown" ~ season,
+      month %in% c(3:5) ~ "Spring",
+      month %in% c(6:9) ~ "Summer",
+      month %in% c(10:11) ~ "Fall",
+      month %in% c(12, 1, 2) ~ "Winter",
+      TRUE ~ NA
+    )
+  )
+```
+
+## (Basic) modelling
+
+[Classification Info](https://www.bfro.net/gdb/classify.asp)
+
+```{r}
+bf <- bf |> 
+  mutate(reliable = ifelse(classification == "Class A", 1, 0))
+```
+
+```{r}
+model <- lm(reliable ~ temperature_mid + humidity + moon_phase + cloud_cover + uv_index, data = bf)
+
+summary(model)
+```
+
+```{r}
+model |> 
+  broom::tidy() |> 
+  mutate(lower = estimate - std.error, upper = estimate + std.error) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = estimate, y = forcats::fct_reorder(term, estimate))) + 
+  geom_vline(xintercept = 0, color = "darkgrey") +
+  geom_point() + 
+  geom_errorbar(aes(xmin = lower, xmax = upper), width = 0.1)
+```
+
+* **Exercise:** Load the data on UFO sightings. Explore the data: look for issues with the data, patterns (seasonal, weather, locations, etc.) using dplyr verbs (e.g. `count()`, `filter()`, `arrange()` etc.).
+
+*Suggestions:*
+
+* Where are the most UFO sightings (what country? Restrict to US: which state? Which city?)
+
+* What is the most common sighting (`shape`)?
+
+* When did we see the most UFOs (e.g., which year or which month is most prominent)? 
+
+*Bonus:* Make a visualization!
+
+*Tips:* You can extract the year from a datetime using `lubridate::year()`, and the month using `lubdridate::month()` (use `label = TRUE` if you want the name, not the number of the month).
+
+```{r}
+ufo <- readr::read_csv(here::here("data", "ufo_sightings.csv"))
+```
+
+```{r}
+ufo |> 
+  count(country_code) |> 
+  arrange(desc(n))
+```
+
+```{r}
+ufo |> 
+  mutate(year = lubridate::year(reported_date_time)) |> 
+  count(year) |> 
+  ggplot(aes(x = year, y = n)) +
+  geom_line()
+```
+
