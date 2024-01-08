@@ -1,14 +1,19 @@
 ---
 title: "`dplyr`-verbs, Piping & Function Composition"
-output: html_document
+output: 
+  html_document:
+    highlight: pygments
+    df_print: tibble
 editor_options: 
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
 ```
-
 ```{r message=FALSE, warning=FALSE}
 library(dplyr)
 ```
@@ -70,79 +75,98 @@ The pipe allows you to read and write code sequentially, the same as you think!
 [Click here](https://dplyr.tidyverse.org/) to get to the `dplyr`-documentation, which is really comprehensive with many examples!
 
 ```{r}
-sw <- dplyr::starwars
-sw
+library(gapminder)
+data("gapminder")
 ```
 
 Selecting:
 
 ```{r}
-select(sw, height, mass, sex)
+select(gapminder, country, year, lifeExp)
 ```
 
 But for `dplyr`-verbs, the data is always the first argument, so we can pipe!
 
 ```{r}
-sw |> select(height, mass, sex)
-sw |> select(-c(sex, birth_year))
+gapminder |> select(country, year, lifeExp)
+gapminder |> select(-c(continent, pop))
 
-sw |> select(ends_with("color"))
+gapminder |> select(starts_with("c"))
 ```
 
 Filtering:
 
 ```{r}
-sw |> filter(gender == "masculine")
-sw |> filter(gender == "masculine" & height > 180)
+gapminder |> filter(continent == "Asia")
+gapminder |> filter(year == 2007)
+
+gapminder |> 
+  filter(year == 2007 & continent %in% c("Asia", "Europe") & pop > 1e7)
 ```
 
 Arranging:
 
 ```{r}
-sw |> arrange(height)
-sw |> arrange(desc(height))
+gapminder |> arrange(lifeExp)
+gapminder |> arrange(desc(pop))
 ```
 
 Summarising:
 
 ```{r}
-sw |> summarise(mean_height = mean(height, na.rm = TRUE))
+gapminder |> 
+  filter(year == 2007) |> 
+  summarise(mean_life_exp = mean(lifeExp, na.rm = TRUE))
 # Why not `mean()`? E.g. for grouped operations:
 
-sw |> 
-  group_by(sex) |> 
-  summarise(mean_height = mean(height, na.rm = TRUE))
+gapminder |> 
+  group_by(continent) |> 
+  summarise(mean_life_exp = mean(lifeExp, na.rm = TRUE)) |> 
+  arrange(desc(mean_life_exp))
 ```
 
 Mutating:
 
 ```{r}
-sw |> 
-  filter(species != "Droid") |> 
-  mutate(bmi = mass / ((height/100) ^ 2)) |> #
-  select(name, bmi) |> 
-  arrange(desc(bmi))
+gapminder |> mutate(pop_million = pop / 1e6)
+
+gapminder |> 
+  mutate(
+    pop_million = pop / 1e6,
+    gdp = gdpPercap * pop
+  )
 ```
 
 Other useful stuff:
 
 ```{r}
-sw |>
-  count(species) |> # count()
+# count()
+
+gapminder |> 
+  filter(year == 2007) |> 
+  count(continent) |> 
   arrange(desc(n))
 ```
 
 ```{r}
-sw |> 
-  mutate(bmi = mass / ((height/100) ^ 2)) |> 
-  group_by(species) |> 
-  summarise(N = n(), bmi = mean(bmi, na.rm = TRUE)) |> # n()
-  arrange(desc(bmi))
+# n()
+
+gapminder |> 
+  filter(year == 2007) |> 
+  group_by(continent) |> 
+  summarise(N = n(), mean_life_exp = mean(lifeExp, na.rm = TRUE))
 ```
 
 If there is one thing to keep in mind, it's the `dplyr`-verbs, because they make data manipulation & exploration really easy.
 
 **Exercise:**
 
-* What are the most common `homeworld`s?
-* What is the average BMI by sex?
+1. What countries were Top 10 in life expectancy (`lifeExp`) in 2007?
+2. Compute overall by continent:
+  a. Mean life expectancy
+  b. mean GDP per capita
+3. Add a new variable to the `gapminder` data set: Total GDP in billion USD (we can assume that GDP = `gdpPercap` $\times$ `pop`).
+
+```{r}
+# Your code here...
+```

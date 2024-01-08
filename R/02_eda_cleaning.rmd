@@ -1,12 +1,18 @@
 ---
 title: "EDA & Data Cleaning"
-output: html_document
+output: 
+  html_document:
+    highlight: pygments
+    df_print: tibble
 editor_options: 
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -126,20 +132,6 @@ model |>
 *Tips:* You can extract the year from a datetime using `lubridate::year()`, and the month using `lubdridate::month()` (use `label = TRUE` if you want the name, not the number of the month).
 
 ```{r}
-ufo <- readr::read_csv(here::here("data", "ufo_sightings.csv"))
-```
 
-```{r}
-ufo |> 
-  count(country_code) |> 
-  arrange(desc(n))
-```
-
-```{r}
-ufo |> 
-  mutate(year = lubridate::year(reported_date_time)) |> 
-  count(year) |> 
-  ggplot(aes(x = year, y = n)) +
-  geom_line()
 ```
 

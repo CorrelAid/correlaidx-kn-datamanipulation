@@ -1,12 +1,18 @@
 ---
 title: "Merging & manipulating data"
-output: html_document
+output: 
+  html_document:
+    highlight: pygments
+    df_print: tibble
 editor_options: 
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
 ```
 
 ```{r}
@@ -18,6 +24,127 @@ library(tidyr)
 
 # Reshaping (pivoting)
 
+Notice anything with this data that is different than we have seen before?
+
+```{r}
+fertility <- readr::read_csv(here::here("data", "wbi_fertility.csv"))
+fertility
+```
+
+**Wide** vs. **long** format. We have now encountered "wide" data for the first time. The `tidyr`-package comes with functions to reshape your data from wide into long and vice versa: `pivot_longer()` and `pivot_wider()`. Let's apply:
+
+```{r}
+fert_long <- 
+  fertility |> 
+  pivot_longer(
+    cols = -starts_with("Country"),
+    names_to = "year",
+    values_to = "fertility"
+  )
+
+fert_long
+```
+
+To do the opposite, use `pivot_wider()`:
+
+```{r}
+fert_long |> 
+  pivot_wider(
+    names_from = "year",
+    values_from = "fertility"
+  )
+```
+
+
 # String manipulation & RegEx
 
-# Functional programming
+```{r}
+library(stringr)
+```
+
+(...)
+
+This data set has a number of articles from the SPIEGEL's "Politics" & "Foreign" ressorts (from January 2023 to October 2023).
+
+```{r}
+spiegel <- readr::read_csv(here::here("data/spiegel.csv"))
+```
+
+Let's look for articles on Ukraine (mentioning Ukraine in the keywords):
+
+```{r}
+spiegel |> filter(str_detect(keywords, "Ukraine"))
+```
+
+Base R: grep*-functions ("global regular expression print"), which you may know from the terminal. 
+
+* `grep()` returns the indices of matches
+* `grepl()` returns TRUE or FALSE for every element
+
+(There are also their weird cousins, like `gregexpr()` & `gregexec()`, which differ in what they return, but you will probably never need them)
+
+```{r}
+spiegel |> filter(grepl("Ukraine", keywords))
+```
+
+* Remove ticker articles.
+* convert to lower, upper, title case.
+
+```{r}
+ticker_articles <- spiegel |> filter(str_detect(title, "News:"))
+  
+ticker_articles |> mutate(title = str_remove(title, "News: "))
+```
+
+For example, we can also use this to remove the base URL
+
+```{r}
+spiegel |> mutate(url = str_remove(url, "https://www.spiegel.de/")) |> select(url)
+```
+
+You can also replace strings:
+
+```{r}
+ticker_articles |> 
+  mutate(title = str_replace(title, "News:", "LOOK!")) |> 
+  select(title)
+```
+
+Or with base R:
+
+```{r}
+ticker_articles |> 
+  mutate(title = gsub("News:", "Also Works!", title)) |> 
+  select(title)
+```
+
+Converting to upper case, lower case, title case etc:
+
+```{r}
+title <- spiegel$title[1]
+
+str_to_lower(title) # base: tolower()
+str_to_upper(title) # base: toupper()
+str_to_title(title)
+str_to_sentence(title)
+```
+
+**Exercise:**
+
+* Find all articles that mention Joe Biden in the title. *Bonus:* Find all articles that mention Joe Biden or Donald Trump. Replace both "Joe Biden" and "Donald Trump" with strings of your choice.
+
+```{r}
+
+```
+
+* Find all articles on Ukraine. Which month had the most articles on Ukraine? Any idea why? Which month had the least? *Tip:* You can use `lubridate::month()` to extract the month from a date/datetime. Set `label = TRUE` to get the name of the month, not just its number.
+
+```{r}
+
+```
+
+* Do the same for Israel. Which month had the most articles here?
+
+```{r}
+
+```
