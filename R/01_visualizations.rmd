@@ -32,11 +32,15 @@ So far, you have (hopefully) looked at how to import data, and how to interact w
 
 First, we would like to talk about the basics of visualizing data, one because it's one of the most fun things, and two because visualizations can help you explore your data and learn more about it, which you can then use to clean, transform and analyze it!
 
-# Grammar of graphics
+# Visualizations with `ggplot2`:
+
+## Grammar of graphics
 
 A heuristic for thinking about statistical visualizations. What is a visualization?
 
 > A *mapping* of *data* to *aesthetic attributes* (color, shape, size...) of *geometric objects* (points, lines, bars...)
+
+## How it translates to code
 
 We work in layers:
 

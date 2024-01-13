@@ -1,5 +1,5 @@
 ---
-title: "`dplyr`-verbs, Piping & Function Composition"
+title: "Intro to the tidyverse: `dplyr`-verbs, Piping & Exploration"
 output: 
   html_document:
     highlight: pygments
@@ -14,55 +14,43 @@ knitr::opts_chunk$set(
   collapse = TRUE, comment = "#>"
 )
 ```
+
+Welcome to the follow-up to the "Intro to R"! If you see this you have managed to download the files from GitHub, which already makes you smarter than tolly500:
+
+<center>
+![](../assets/github.jpg){width=500px}
+</center>
+
+This means now it's...
+
+# Setup time
+
+<center>
+![](../assets/50cent_meme.jpg){width=500px}
+</center>
+
+If you haven't already:
+
+1. Install R:
+  - [Windows](https://cran.r-project.org/bin/windows/base/)
+  - [MacOS](https://cran.r-project.org/bin/macosx/) (make sure you select the right one based on whether you have an "old" intel mac or a new Apple silicon (M1/M2) mac)
+  - Linux: from package manager (probably either `R` or `r-base`)
+
+2. Install RStudio [from the official website](https://posit.co/download/rstudio-desktop/) (please)
+
+3. Install packages: 
+
+  - once you are inside RStudio, head to the console (the little window that says "console"), enter `install.packages(c("tidyverse", "gapminder", "here", "markdown", "rmarkdown"))` and hit Enter.
+  - Enjoy epic hacker moment
+  - *Note:* Once you have installed packages, you don't need to install them again! Just load them with `library()`. So please, don't include `install.packages()` in your code! Ever!
+  
+4. Make yourself feel at home: If you're done early, under Tools > Global Options > Appearance you can change the theme etc
+
+# `dplyr`-verbs
+
 ```{r message=FALSE, warning=FALSE}
 library(dplyr)
 ```
-
-
-# Piping & Function composition
-
-You have learnt about functions:
-
-```{r}
-my_vector <- runif(100) # 100 random values between 0 & 1
-
-square <- function(x) x^2
-deviation <- function(x) x - mean(x)
-```
-
-Imagine you want to compute the standard deviation of a vector from scratch. This is the square root of the mean squared deviation. We can write this as:
-
-```{r}
-sqrt(mean(square(deviation(my_vector))))
-```
-
-...but this is awkward, because to follow the sequence of computation, we have to read it from the inside out (first deviation, the square, then mean, then square root...). Alternatively, we can use intermediate objects:
-
-```{r}
-out <- deviation(my_vector)
-out <- square(out)
-out <- mean(out)
-out <- sqrt(out)
-out
-```
-
-But overwriting the same object is inefficient & looks stupid. So no-go! R has a third option: pipe operators `%>%` and `|>`. They allow you to chain functions together:
-
-```{r}
-my_vector |> 
-  deviation() |> 
-  square() |> 
-  mean() |> 
-  sqrt()
-```
-
-The easiest way to wrap your head around this is to pronounce the pipe in your head as "and then": take x, *and then* compute the deviation, *and then* square the result, *and then* take the mean, *and then* compute the square root.
-
-It takes whatever is on the left-hand side, and passes it to the function on the right-hand side as the first argument, so `x |> f()` is the same as `f(x)`! We will talk about how to use it as another argument but the first later on.
-
-The pipe allows you to read and write code sequentially, the same as you think!
-
-# `dplyr`-verbs
 
 `dplyr` is a grammar for data manipulation. It follows the logic of "verbs":
 
@@ -74,18 +62,28 @@ The pipe allows you to read and write code sequentially, the same as you think!
 
 [Click here](https://dplyr.tidyverse.org/) to get to the `dplyr`-documentation, which is really comprehensive with many examples!
 
+We will use data from [Gapminder](https://www.gapminder.org/) for our examples, which is provided as an R-package:
+
 ```{r}
 library(gapminder)
 data("gapminder")
 ```
 
-Selecting:
+**Selecting:**
+
+Let's find out together how `select()` works:
+
+```{r eval=FALSE}
+?select # or: help(select)
+```
+
+R has great built-in documentation you can *always* use to look things up if you don't remember something or want to learn something new.
 
 ```{r}
 select(gapminder, country, year, lifeExp)
 ```
 
-But for `dplyr`-verbs, the data is always the first argument, so we can pipe!
+But for `dplyr`-verbs, the data is always the first argument, so we can "pipe":
 
 ```{r}
 gapminder |> select(country, year, lifeExp)
@@ -94,7 +92,9 @@ gapminder |> select(-c(continent, pop))
 gapminder |> select(starts_with("c"))
 ```
 
-Filtering:
+The "pipe" (`|>` or `%>%`) takes what is one the left side, and hands it to the function on the right-hand side as the first argument. Sounds complicated? Just read the pipe in your head as "and then...". So: Take `gapminder` *and then* `select()` the columns.
+
+**Filtering:**
 
 ```{r}
 gapminder |> filter(continent == "Asia")
@@ -104,14 +104,50 @@ gapminder |>
   filter(year == 2007 & continent %in% c("Asia", "Europe") & pop > 1e7)
 ```
 
-Arranging:
+With the pipe, we can also combine these steps easily:
+
+```{r}
+gapminder |> 
+  filter(continent == "Europe" & year == 2007) |> 
+  select(country, lifeExp, gdpPercap)
+```
+
+Think: take `gapminder` *and then* `filter()` it *and then* `select()` these columns.
+
+**Arranging:**
 
 ```{r}
 gapminder |> arrange(lifeExp)
 gapminder |> arrange(desc(pop))
 ```
 
-Summarising:
+Again, combining what we know to find the countries with the highest life expectancy:
+
+```{r}
+gapminder |> 
+  filter(continent == "Europe" & year == 2007) |> 
+  select(country, lifeExp, gdpPercap) |> 
+  arrange(desc(lifeExp))
+```
+
+*Think for a moment: how do you read this sequence in your head?*
+
+**Renaming:**
+
+```{r}
+gapminder |> 
+  select(country, year, lifeExp, gdpPercap) |> 
+  rename("life_exp" = lifeExp, "gdp_pc" = gdpPercap)
+```
+
+Most of this is self-explanatory right? Here is a tip: you can rename inside `select()`, so you rarely need `rename()`:
+
+```{r}
+gapminder |> 
+  select(country, year, "life_exp" = lifeExp, "gdp_pc" = gdpPercap)
+```
+
+**Summarising:**
 
 ```{r}
 gapminder |> 
@@ -125,7 +161,7 @@ gapminder |>
   arrange(desc(mean_life_exp))
 ```
 
-Mutating:
+**Mutating:** Add new or overwrite existing variables:
 
 ```{r}
 gapminder |> mutate(pop_million = pop / 1e6)
@@ -157,15 +193,17 @@ gapminder |>
   summarise(N = n(), mean_life_exp = mean(lifeExp, na.rm = TRUE))
 ```
 
-If there is one thing to keep in mind, it's the `dplyr`-verbs, because they make data manipulation & exploration really easy.
+For `group_by()`, if you continue your pipeline after `summarise()` or whatever you did *by group*, you may need to `ungroup()` (otherwise *everything* will be done by group). If you want to `arrange()` your grouped data, you may need to set `.by_group = TRUE` inside of `arrange()`.
 
-**Exercise:**
+If there is *one* thing to remember from this course, it's the `dplyr`-verbs, because they make data manipulation & exploration really easy. They are building blocks with which you can do most operations you will *ever* need for processing your data.
 
-1. What countries were Top 10 in life expectancy (`lifeExp`) in 2007?
+**Exercise Time:**
+
+1. What countries were Top 10 in life expectancy (`lifeExp`) in 1952? Which were the top 10 in 2007? What changes do you see (in terms of countries and in terms of life expectancy)?
 2. Compute overall by continent:
   a. Mean life expectancy
   b. mean GDP per capita
-3. Add a new variable to the `gapminder` data set: Total GDP in billion USD (we can assume that GDP = `gdpPercap` $\times$ `pop`).
+3. Add a new variable to the `gapminder` data set: Total GDP in billion USD (we can assume that GDP = `gdpPercap` $\times$ `pop`). *Bonus:* In 2007, which countries had the highest total GDP?
 
 ```{r}
 # Your code here...

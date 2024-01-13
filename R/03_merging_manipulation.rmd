@@ -18,20 +18,43 @@ knitr::opts_chunk$set(
 ```{r}
 library(dplyr)
 library(tidyr)
-```
 
-# Merging (joins)
+bf <- readr::read_csv(here::here("data", "bigfoot.csv"))
+```
 
 # Reshaping (pivoting)
 
-Notice anything with this data that is different than we have seen before?
+Remember when we did this earlier:
+
+```{r}
+bf |> summarise(across(everything(), function(x) sum(is.na(x))))
+```
+
+It looked kind of stupid, right? It's too... wide?! Wouldn't it be better if we had a column that holds the variable, and one that holds the number of missing values? Then we could also use all of our tricks (`arrange()` etc.) again! The solution comes from the `tidyr`-package, part of the tidyverse & dplyr's "brother":
+
+```{r}
+wide_data <- bf |> summarise(across(everything(), function(x) sum(is.na(x))))
+
+wide_data |> 
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "missings")
+```
+
+Using our tricks again to find the variables with the most missings:
+
+```{r}
+wide_data |> 
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "missings") |> 
+  arrange(desc(missings))
+```
+
+"Wide" data is common in the wild. For example, the World Bank Development Indicators come in this format:
 
 ```{r}
 fertility <- readr::read_csv(here::here("data", "wbi_fertility.csv"))
 fertility
 ```
 
-**Wide** vs. **long** format. We have now encountered "wide" data for the first time. The `tidyr`-package comes with functions to reshape your data from wide into long and vice versa: `pivot_longer()` and `pivot_wider()`. Let's apply:
+Let's put this one into long format as well:
 
 ```{r}
 fert_long <- 
@@ -45,106 +68,88 @@ fert_long <-
 fert_long
 ```
 
-To do the opposite, use `pivot_wider()`:
+**Exercise time:** Look at the documentation for `?pivot_wider()`. Try to use it to put our long data frame (`fert_long`) back into the original "wide" format! *Tip:* If you scroll down in the documentation, you get to the code examples. Examples often say more than a thousand explanations...
 
 ```{r}
-fert_long |> 
-  pivot_wider(
-    names_from = "year",
-    values_from = "fertility"
+# Your code here
+```
+
+# Merging (joining)
+
+Let's say we are interested in the relationship between female education & birth rates. We have now gotten our data on education in order, and we have attained data on female education:
+
+```{r}
+educ <- readr::read_csv(here::here("data", "wbi_education.csv"))
+```
+
+**Exercise time:** Thanks to the World Bank, the data is again in wide format (oh no!). Fix this using `pivot_longer()`!
+
+```{r}
+# Your code here
+```
+
+Okay, now we have both datasets in order... But, how do we put them together? If we look closely, we see that both of them share three columns: `CountryName` & `CountryCode`, and of course the `year`, which we can use to match observations!
+
+There are different ways of merging (or "joining") the education data to our fertility data:
+
+![](../assets/joins.png)
+
+Here is the solution for above btw (needed for joining):
+
+```{r}
+educ <- 
+  educ |> 
+  pivot_longer(
+    cols = -starts_with("Country"),
+    names_to = "year",
+    values_to = "females_out_of_school"
   )
 ```
 
 
-# String manipulation & RegEx
+For example:
 
 ```{r}
-library(stringr)
+left_join(fert_long, educ |> distinct(), by = c("CountryCode", "year"))
 ```
 
-(...)
-
-This data set has a number of articles from the SPIEGEL's "Politics" & "Foreign" ressorts (from January 2023 to October 2023).
+Keeps all observations from `fert_long`, and adds matching observations from `educ` based on CountryCode and year. A `right_join()` would do the opposite. An `inner_join()` only keeps CountryCode-year combinations that exist in both data frames, and a `full_join()` keeps all that exist in *either* of the two. Let's stick to an `inner_join()`:
 
 ```{r}
-spiegel <- readr::read_csv(here::here("data/spiegel.csv"))
+full <- 
+  fert_long |> 
+  inner_join(educ, by = c("CountryCode", "year")) |> 
+  select(-starts_with("CountryN")) |>
+  rename("country" = CountryCode) |> 
+  mutate(across(c(fertility, females_out_of_school), as.numeric)) |> 
+  drop_na()
+
+full
 ```
 
-Let's look for articles on Ukraine (mentioning Ukraine in the keywords):
+Now that we have the two data sets together & clean, we can finally do our analysis! This time we will not do normal OLS (`lm()`) like the last times. Since R is a language built from the ground up for statistics, there are modelling packages for just about anything. Here, as an example, we will estimate the within-country effect to adjust for time-invariant heterogeneity between countries, using a fixed-effects model:
 
 ```{r}
-spiegel |> filter(str_detect(keywords, "Ukraine"))
+library(fixest)
+
+model <- feols(
+  fertility ~ females_out_of_school, 
+  data = full, 
+  fixef = "country", # country fixed-effects
+  vcov = ~country    # standard errors clustered by country (vcov = Variance-Covariance matrix)
+)
+
+summary(model)
 ```
 
-Base R: grep*-functions ("global regular expression print"), which you may know from the terminal. 
+(Again I caution against any interpretation, we are not doing serious stuff here; this is just an example without substantive meaning)
 
-* `grep()` returns the indices of matches
-* `grepl()` returns TRUE or FALSE for every element
+That concludes the workshop - if you would like to continue learning R, I attached an extra html with useful links & tips. You can keep the course materials and always come back to them to revisit stuff.
 
-(There are also their weird cousins, like `gregexpr()` & `gregexec()`, which differ in what they return, but you will probably never need them)
+If you need help with your own projects or data (e.g. term papers or BA thesis), feel free to reach out to us, we are happy to help. Also you are all happily invited to get in touch with correlaid if you enjoy working with data!
 
-```{r}
-spiegel |> filter(grepl("Ukraine", keywords))
-```
+Happy Coding everybody!
 
-* Remove ticker articles.
-* convert to lower, upper, title case.
-
-```{r}
-ticker_articles <- spiegel |> filter(str_detect(title, "News:"))
-  
-ticker_articles |> mutate(title = str_remove(title, "News: "))
-```
-
-For example, we can also use this to remove the base URL
-
-```{r}
-spiegel |> mutate(url = str_remove(url, "https://www.spiegel.de/")) |> select(url)
-```
-
-You can also replace strings:
-
-```{r}
-ticker_articles |> 
-  mutate(title = str_replace(title, "News:", "LOOK!")) |> 
-  select(title)
-```
-
-Or with base R:
-
-```{r}
-ticker_articles |> 
-  mutate(title = gsub("News:", "Also Works!", title)) |> 
-  select(title)
-```
-
-Converting to upper case, lower case, title case etc:
-
-```{r}
-title <- spiegel$title[1]
-
-str_to_lower(title) # base: tolower()
-str_to_upper(title) # base: toupper()
-str_to_title(title)
-str_to_sentence(title)
-```
-
-**Exercise:**
-
-* Find all articles that mention Joe Biden in the title. *Bonus:* Find all articles that mention Joe Biden or Donald Trump. Replace both "Joe Biden" and "Donald Trump" with strings of your choice.
-
-```{r}
-
-```
-
-* Find all articles on Ukraine. Which month had the most articles on Ukraine? Any idea why? Which month had the least? *Tip:* You can use `lubridate::month()` to extract the month from a date/datetime. Set `label = TRUE` to get the name of the month, not just its number.
-
-```{r}
-
-```
-
-* Do the same for Israel. Which month had the most articles here?
-
-```{r}
-
-```
+<center>
+![](../assets/happy_coding.png)
+</center>
