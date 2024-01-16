@@ -68,7 +68,7 @@ fert_long <-
 fert_long
 ```
 
-**Exercise time:** Look at the documentation for `?pivot_wider()`. Try to use it to put our long data frame (`fert_long`) back into the original "wide" format! *Tip:* If you scroll down in the documentation, you get to the code examples. Examples often say more than a thousand explanations...
+**Exercise time:** Look at the documentation for `?pivot_wider()`. Try to use it to put our long data frame (`fert_long`) back into the original "wide" format! *Tip:* If you scroll down in the documentation, you get to the code examples. Examples often say more than a thousand explanations... *Tip 2:* You only need two of the arguments: `names_from` and `values_from`.
 
 ```{r}
 # Your code here
@@ -82,7 +82,7 @@ Let's say we are interested in the relationship between female education & birth
 educ <- readr::read_csv(here::here("data", "wbi_education.csv"))
 ```
 
-**Exercise time:** Thanks to the World Bank, the data is again in wide format (oh no!). Fix this using `pivot_longer()`!
+**Exercise time:** Thanks to the World Bank, the data is again in wide format (oh no!). Fix this using `pivot_longer()`! The variable is the ratio of high school age females out of school, so give it an appropriate name.
 
 ```{r}
 # Your code here
@@ -110,7 +110,7 @@ educ <-
 For example:
 
 ```{r}
-left_join(fert_long, educ |> distinct(), by = c("CountryCode", "year"))
+left_join(fert_long, educ, by = c("CountryCode", "year"))
 ```
 
 Keeps all observations from `fert_long`, and adds matching observations from `educ` based on CountryCode and year. A `right_join()` would do the opposite. An `inner_join()` only keeps CountryCode-year combinations that exist in both data frames, and a `full_join()` keeps all that exist in *either* of the two. Let's stick to an `inner_join()`:

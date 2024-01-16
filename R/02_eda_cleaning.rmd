@@ -35,7 +35,7 @@ library(ggplot2)
 bf <- readr::read_csv(here::here("data", "bigfoot.csv"))
 ```
 
-We will investigate one of my personal research interests today: bigfoot. The data we use has been meticulously compiled by the [Bigfoot Fielr Researchers Organization (BFRO)](https://www.bfro.net/) and contains data on sightings with a classification (how reliable they are) and some additional data on location and circumstances of the sightings.
+We will investigate one of my personal research interests today: bigfoot. The data we use has been meticulously compiled by the [Bigfoot Field Researchers Organization (BFRO)](https://www.bfro.net/) and contains data on sightings with a classification (how reliable they are) and some additional data on location and circumstances of the sightings.
 
 # Basics
 
@@ -77,11 +77,10 @@ bf |>
 # ^ No, there are at least some dates for which we can impute the season!
 ```
 
-If we are lazy, we can just convert the unknowns to `NA` (missing value, "Not Available") (*Explain `if_else()`*):
+If we are lazy, we can just convert the unknowns to `NA` (missing value, "Not Available"):
 
 ```{r}
-bf |> 
-  mutate(season = if_else(season == "Unknown", NA, season))
+bf |> mutate(season = na_if(season, "Unknown"))
 ```
 
 Dealing with missing values is generally something you will most likely have to do everytime with real data (respondents of surveys don't answer questions or quit early, countries, organizations or businesses don't report data, data is lost, etc. etc.). 
@@ -137,6 +136,8 @@ bf |>
   count(month)  # 28 can't be imputed...
 ```
 
+We can use `case_when()` to impute the "Unknowns":
+
 ```{r}
 bf <- 
   bf |> 
@@ -148,19 +149,26 @@ bf <-
       month %in% c(6:9) ~ "Summer",
       month %in% c(10:11) ~ "Fall",
       month %in% c(12, 1, 2) ~ "Winter",
-      TRUE ~ NA
+      .default = NA
     )
   )
 ```
+
+`case_when()` is really handy: it's basically a replacement for writing long chains of code like `if (condition) { do_something } else if (condition) { do_other_thing } else { do_this }`. The general formula for it is `case_when(condition ~ output)`. Lastly, we provide a default value for cases that match none of the `condition`s (here: `NA`).
 
 ## (Basic) modelling
 
 [Classification Info](https://www.bfro.net/gdb/classify.asp)
 
+Let's first construct our outcome (a binary outcome for whether the sighting has been classified as "reliable" by the BFRO):
+
 ```{r}
-bf <- bf |> 
-  mutate(reliable = if_else(classification == "Class A", 1, 0))
+bf <- bf |> mutate(reliable = if_else(classification == "Class A", 1, 0))
 ```
+
+`if_else()` is similar to `case_when()`: the form is `if_else(condition, if_true_do_this, else_do_this)`; so if `classification == "Class A"` put a `1`, else put a `0`. We call the resulting vector `reliable`.
+
+Fitting a model using `lm()` ("linear model") from base R (you already saw this last week) & inspecting it:
 
 ```{r}
 model <- lm(reliable ~ temperature_mid + humidity + moon_phase + cloud_cover + uv_index, data = bf)
@@ -168,9 +176,11 @@ model <- lm(reliable ~ temperature_mid + humidity + moon_phase + cloud_cover + u
 summary(model)
 ```
 
+A recipe to visualize your models:
+
 ```{r}
 model |> 
-  broom::tidy() |> 
+  broom::tidy() |> # seen last week; turns model output into data frame
   mutate(lower = estimate - std.error, upper = estimate + std.error) |> 
   filter(term != "(Intercept)") |> 
   ggplot(aes(x = estimate, y = forcats::fct_reorder(term, estimate))) + 

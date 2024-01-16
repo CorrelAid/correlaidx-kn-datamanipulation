@@ -20,12 +20,10 @@ git clone https://github.com/CorrelAid/correlaidx-kn-datamanipulation
 
 **Day 1:**
 
-1. Intro: dplyr verbs, pipes & function composition
-2. Visualizations: brief introduction to `ggplot2` (potentially subject to change if there is a dedicated workshop)
-3. Exploring & cleaning part 1
+1. Intro: dplyr verbs & piping
+2. Visualizations: brief introduction to `ggplot2` 
 
 **Day 2:**
 
-4. Exploring & cleaning part 2
-5. Merging & advanced manipulation (reshaping, string manipulation with RegEx etc.)
-6. Messy data: hands-on examples of working with very messy data & some recipes
+3. Importing data & exploratory analysis
+4. Advanced manipulations: reshaping & merging data

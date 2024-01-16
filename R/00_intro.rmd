@@ -94,7 +94,14 @@ gapminder |> select(starts_with("c"))
 
 The "pipe" (`|>` or `%>%`) takes what is one the left side, and hands it to the function on the right-hand side as the first argument. Sounds complicated? Just read the pipe in your head as "and then...". So: Take `gapminder` *and then* `select()` the columns.
 
-**Filtering:**
+You can also select `everything()`, which selects... well, everything, kind of. You can use it e.g. to reorder columns (here, it will select those explicitly called upon first, and then `everything()` else):
+
+```{r}
+gapminder |> select(pop, gdpPercap, everything())
+```
+
+
+**Filtering:** Subset your data!
 
 ```{r}
 gapminder |> filter(continent == "Asia")
