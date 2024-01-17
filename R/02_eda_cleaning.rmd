@@ -1,0 +1,312 @@
+---
+title: "EDA & Data Cleaning"
+output: 
+  html_document:
+    highlight: pygments
+    df_print: tibble
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
+```
+
+# File management & projects: how to stop yourself from making a mess
+<center>
+![](../assets/xkcd.png)
+</center>
+
+If we want to import data into R, we need to tell R where to find the file we want to import. If we want to save our results, we need to tell R where to save them. In other words: we need some idea of where our files are (I assume you know at least [what they are](https://www.theverge.com/22684730/students-file-folder-directory-structure-education-gen-z)) or where they are "going". The "classic" way to do this is to set a working directory using `setwd("path/to/my/files")`. You can see what your current working directory is using `getwd()` (run it on the console to check).
+
+However, one of the pillars of science is reproducibility: if you hand in your thesis, or publish a paper, and someone wants to reproduce your results, and your code includes something like `setwd("Users/Me/Documents/Stuff/Uni/BA/FolderOnlyIHave/MoreStuff/")`, *No one* except you will be able to run it. Even worse, what if you import files only you have?
+
+Solution: stay organized. [Here](https://alexd106.github.io/intro2R/project_setup.html) is a guide on how to set up a clean and reproducible project and use `.Rproj`ects, and [here](https://here.r-lib.org/) you can find the `here`-package, which allows you to side-step file path nightmares. 
+
+# Let's work on some real data
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+# https://www.bfro.net/
+bf <- readr::read_csv(here::here("data", "bigfoot.csv"))
+```
+
+We will investigate one of my personal research interests today: bigfoot. The data we use has been meticulously compiled by the [Bigfoot Field Researchers Organization (BFRO)](https://www.bfro.net/) and contains data on sightings with a classification (how reliable they are) and some additional data on location and circumstances of the sightings.
+
+# Basics
+
+The end-goal is to find out what circumstances predict reliable bigfoot-sightings (we are not looking for causal relationships here, just what correlates - this is not a research design or methods class). But first, we should spend some time exploring our data to get familiar with it, and tidy & clean it a bit.
+
+## Exploratory Data Analysis (EDA)
+
+First step is to get an overview of your data.
+
+```{r}
+tibble(bf)
+glimpse(bf)
+names(bf)
+```
+
+```{r}
+bf |> 
+  count(state) |> 
+  arrange(desc(n))
+```
+
+```{r}
+bf |> 
+  count(season) |> 
+  ggplot(aes(x = n, y = forcats::fct_reorder(season, n), fill = season)) +
+  # ^ a little trick to reorder your columns by size!
+  geom_col()
+```
+
+Here, we encounter our first problem: what the heck is "Unknown"? We should probably investigate this a bit. Given we also have a column called "date", maybe we can impute missing seasons based on the date?
+
+## Cleaning
+
+```{r}
+bf |> 
+  filter(season == "Unknown") |> 
+  select(date, everything())
+
+# ^ No, there are at least some dates for which we can impute the season!
+```
+
+If we are lazy, we can just convert the unknowns to `NA` (missing value, "Not Available"):
+
+```{r}
+bf |> mutate(season = na_if(season, "Unknown"))
+```
+
+Dealing with missing values is generally something you will most likely have to do everytime with real data (respondents of surveys don't answer questions or quit early, countries, organizations or businesses don't report data, data is lost, etc. etc.). 
+
+Here, despite the hard work of the BFRO, we have a lot of missing values. Let's find out how many there actually are. First, we can check for complete cases by omitting all rows with `NA`:
+
+```{r}
+bf |> na.omit()
+```
+
+This shows only rows that have observations in *all* columns. But we may not need *aaaaall* columns, so let's find out where the worst culprits are. We can do this by putting together some things you have already learned in the intro course (like defining functions):
+
+```{r}
+how_many_na <- function(vec) {
+  sum(is.na(vec))
+}
+# ^ a function that takes a vector as input and 
+# returns the sum of NA values in the vector.
+
+bf |> summarise(across(everything(), how_many_na))
+#^ Use `across()` to apply a function to multiple
+# columns inside a dplyr-verb
+```
+
+The most radical approach to deal with missing values is to simply drop *all* of them:
+
+```{r}
+bf |> tidyr::drop_na()
+```
+
+Or drop cases that have missing values in the columns you are interested in:
+
+```{r}
+bf |> 
+  filter(!is.na(season)) # ! = logical negation, reverses a lgl vector (just read as "not")
+```
+
+For multiple columns:
+
+```{r}
+bf |> 
+  # Don't keep rows if they miss observations for
+  # any of these two variables:
+  filter(!if_any(c(season, uv_index), is.na))
+```
+
+Sometimes, however, you may have ways to impute your missing values. Let's return to season: maybe we can impute the season based on the date, which we also have?
+
+```{r}
+bf |> 
+  filter(season == "Unknown") |> 
+  mutate(month = lubridate::month(date)) |> 
+  count(month)  # 28 can't be imputed...
+```
+
+We can use `case_when()` to impute the "Unknowns":
+
+```{r}
+bf <- 
+  bf |> 
+  mutate(
+    month = lubridate::month(date),
+    season = case_when(
+      season != "Unknown" ~ season,
+      month %in% c(3:5) ~ "Spring",
+      month %in% c(6:9) ~ "Summer",
+      month %in% c(10:11) ~ "Fall",
+      month %in% c(12, 1, 2) ~ "Winter",
+      .default = NA
+    )
+  )
+```
+
+`case_when()` is really handy: it's basically a replacement for writing long chains of code like `if (condition) { do_something } else if (condition) { do_other_thing } else { do_this }`. The general formula for it is `case_when(condition ~ output)`. Lastly, we provide a default value for cases that match none of the `condition`s (here: `NA`).
+
+## (Basic) modelling
+
+[Classification Info](https://www.bfro.net/gdb/classify.asp)
+
+Let's first construct our outcome (a binary outcome for whether the sighting has been classified as "reliable" by the BFRO):
+
+```{r}
+bf <- bf |> mutate(reliable = if_else(classification == "Class A", 1, 0))
+```
+
+`if_else()` is similar to `case_when()`: the form is `if_else(condition, if_true_do_this, else_do_this)`; so if `classification == "Class A"` put a `1`, else put a `0`. We call the resulting vector `reliable`.
+
+Fitting a model using `lm()` ("linear model") from base R (you already saw this last week) & inspecting it:
+
+```{r}
+model <- lm(reliable ~ temperature_mid + humidity + moon_phase + cloud_cover + uv_index, data = bf)
+
+summary(model)
+```
+
+A recipe to visualize your models:
+
+```{r}
+model |> 
+  broom::tidy() |> # seen last week; turns model output into data frame
+  mutate(lower = estimate - std.error, upper = estimate + std.error) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = estimate, y = forcats::fct_reorder(term, estimate))) + 
+  geom_vline(xintercept = 0, color = "darkgrey") +
+  geom_pointrange(aes(xmin = lower, xmax = upper))
+```
+
+One thing we have not discussed yet is string manipulation. Look at the y-axis labels: We may want to format the names a bit nicer. We can do this by modifying the strings (names) in the "term"-column:
+
+```{r}
+tidy_model <- 
+  model |> 
+  broom::tidy() |> # seen last week; turns model output into data frame
+  mutate(lower = estimate - std.error, upper = estimate + std.error) |> 
+  filter(term != "(Intercept)")
+
+tidy_model
+```
+
+For everything with strings, use [`stringr`](https://stringr.tidyverse.org/):
+
+```{r}
+library(stringr)
+
+tidy_model <- 
+  tidy_model |> 
+  mutate(
+    term = 
+      term |> # take term, *and then...*
+      # The syntax of stringr is quite intuitive:
+      str_replace("_", " ") |> 
+      str_to_title() |> 
+      str_replace("Uv", "UV")
+  )
+
+tidy_model |> select(term)
+```
+
+Plotting again:
+
+```{r}
+tidy_model |> 
+  ggplot(aes(x = estimate, y = forcats::fct_reorder(term, estimate))) + 
+  geom_vline(xintercept = 0, color = "darkgrey") +
+  geom_pointrange(aes(xmin = lower, xmax = upper)) +
+  labs(x = "Coefficient estimate", y = "", title = "Predictors of reliable bigfoot sightings")
+```
+
+
+### Exporting your models
+
+Check out `stargazer` and `modelsummary` if you want to export your results (to html, latex etc.)
+
+```{r results='asis'}
+stargazer::stargazer(model, type="html")
+```
+
+```{r}
+model |> 
+  modelsummary::modelsummary(
+    stars = c("***" = 0.01, "**" = 0.05, "*" = 0.1),
+    coef_map = c(
+      "temperature_mid" = "Temperature",
+      "humidity" = "Humidity",
+      "moon_phase" = "Moon Phase",
+      "cloud_cover" = "Cloud Cover",
+      "uv_index" = "UV Index"
+    )
+  ) |> 
+  kableExtra::add_header_above(c(" " = 1, "Reliable Sighting" = 1)) # = 1 column each
+```
+
+If you have multiple models, just put them into a `list()`.
+
+**Exercise Time:** Load the data on UFO sightings. Explore the data: look for issues with the data, patterns (seasonal, weather, locations, etc.) using dplyr verbs (e.g. `count()`, `filter()`, `arrange()` etc.).
+
+*Suggestions:*
+
+* Where are the most UFO sightings (what country? Restrict to US: which state? Which city?)
+
+* What is the most common sighting (`shape`)?
+
+* When did we see the most UFOs (e.g., which year or which month is most prominent)? 
+
+*Bonus:* Make a visualization! *Double Bonus:* Fit a simple linear model (`lm()`) & examine the output.
+
+*Tips:* You can extract the year from a datetime using `lubridate::year()`, and the month using `lubdridate::month()` (use `label = TRUE` if you want the name, not the number of the month).
+
+```{r eval=FALSE}
+ufo <- readr::read_csv(here::here("data/ufo_sightings.csv"))
+
+# Your code here...
+```
+
+# Bonus: Put your brain on autopilot & let the computer make the model
+
+<center>
+![](../assets/dog.jpg){width=400px}
+</center>
+
+In this case, we could also try to automate feature selection (i.e. selection of independent variables) to maximize explanatory power using stepwise AIC, which will select the best fit by minimizing [the AIC](https://en.wikipedia.org/wiki/Akaike_information_criterion).
+
+We just slap all numeric variables we have into the model & let the computer do the rest:
+
+```{r}
+the_computers_model <- 
+  bf |> 
+  # just take all numeric variables except the ID (number):
+  select(where(is.numeric), -number) |> 
+  # drop all rows with NA (or else conpuder will nag):
+  tidyr::drop_na() |> 
+  lm(reliable ~ ., data = _) |> 
+  MASS::stepAIC(direction = "backward", trace = FALSE)
+```
+
+"Backward" means to start with all predictors & step by step remove those with the least significant effect (you can also do it "forward" which means starting with an empty model & gradually adding them, or "both"). The `trace`-argument controls whether all steps will be shown/printed.
+
+As you may have thought already, this is basically just throwing spaghetti at the wall & seeing what sticks:
+
+```{r results='asis'}
+stargazer::stargazer(the_computers_model, type = "html")
+```
+
+For example, there are two variables for temperature which probably capture the same thing. Looks like you will have to do the thinking yourself after all...
+
+<center>
+![](../assets/dab.jpg){width=400px}
+</center>
+

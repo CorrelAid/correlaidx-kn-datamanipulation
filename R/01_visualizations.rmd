@@ -1,0 +1,299 @@
+---
+title: "Visualizations"
+output: 
+  html_document:
+    highlight: pygments
+    df_print: tibble
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(gapminder)
+data("gapminder")
+
+gm <- gapminder |> filter(year == 2007) # let's stick to one year for now...
+```
+
+# The data analysis process
+
+![The data analysis process](../assets/process.png)
+
+So far, you have (hopefully) looked at how to import data, and how to interact with it; maybe done some basic tidying. We now want to do some more tidying, and move into the circle of exploring, transforming, and analyzing your data.
+
+First, we would like to talk about the basics of visualizing data, one because it's one of the most fun things, and two because visualizations can help you explore your data and learn more about it, which you can then use to clean, transform and analyze it!
+
+# Visualizations with `ggplot2`:
+
+## Grammar of graphics
+
+A heuristic for thinking about statistical visualizations. What is a visualization?
+
+> A *mapping* of *data* to *aesthetic attributes* (color, shape, size...) of *geometric objects* (points, lines, bars...)
+
+## How it translates to code
+
+We work in layers:
+
+```{r}
+ggplot()
+```
+
+Adding data & mapping:
+
+```{r}
+ggplot(data = gm, mapping = aes(x = gdpPercap, y = lifeExp))
+```
+
+Adding geometric objects:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + # adding layers with "+"
+  geom_point()
+```
+
+There are more attributes, like `color`:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_point()
+```
+
+* **Exercise:** Recreate the above plot, and map `size` to the countries' population (`pop`)! *Bonus:* Do you notice anything that could be problematic?
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point()
+
+# Bonus: Big countries may now obscure small countries!
+```
+
+If we set aesthetic attributes outside `aes()`, they take on static values. For example, `alpha` determines the opaqueness of objects:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5)
+```
+
+You can also set labels for axis & legend using `labs()`:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  )
+```
+
+`ggplot2` also has themes:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal()
+```
+
+## Other `geom_*`s
+
+Lines (`geom_line()`):
+
+```{r}
+gapminder |> 
+  filter(country == "Germany") |> 
+  ggplot(aes(x = year, y = lifeExp)) +
+  geom_line()
+```
+
+Bars (`geom_bar()` & `geom_col()` (= columns, aka easier to use bars)):
+
+```{r}
+gapminder |> 
+  filter(country == "Germany") |> 
+  ggplot(aes(x = year, y = gdpPercap)) +
+  geom_col()
+```
+
+Violin- & Boxplots (`geom_violin()` & `geom_boxplot()`)
+
+```{r}
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year)) +
+  geom_boxplot()
+```
+
+## Wraps
+
+Let's say you wanted to make the last plot *by continent*. Would you have to `filter()` and make plots for all continents separately? There is of course a smarter way: we can "wrap" the plot by continent:
+
+```{r}
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year, fill = continent)) +
+  geom_boxplot() +
+  facet_wrap(~continent)
+```
+
+## Axes, scales & `theme()`-elements
+
+All visual elements of the plot can be changed inside `theme()` (the ggplot2-internal syntax may seem a bit strange at first):
+
+```{r}
+# show "scales::comma_format()" & "scales::percent_format()"
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year, fill = continent)) +
+  geom_boxplot() +
+  facet_wrap(~continent) +
+  theme(
+    axis.text.x = element_text(angle = 45), 
+    legend.position = "bottom"
+  )
+```
+
+Using the `scales`-package, we can also nicely format our axis labels (useful especially if you have things like percentages (`scales::label_percent()`) or very large numbers (`scales::label_comma()` or `scales::label_scientific()`)):
+
+```{r}
+gapminder |> 
+  filter(country == "Germany") |> 
+  ggplot(aes(x = year, y = gdpPercap)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "Germany's GDP p.C. over time") +
+  scale_y_continuous(labels = scales::label_comma()) 
+# ^ or even better: scales::label_currency()
+```
+
+Inside ggplot2's `scale_*`-functions, you can also change things like color and fill scales. Recall our original plot:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal() +
+  scale_color_viridis_d()
+  # Or others:
+  #scale_color_brewer(palette = "Accent")
+```
+
+If you are interested in visualizations, you can read up on color & fill scales and color theory for ggplot2 [here](https://ggplot2-book.org/scales-colour).
+
+### Putting it all together
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents, in 2007",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population",
+    caption = "Data: Gapminder"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  # ^ You can also change horizontal (hjust) and vertical (vjust) alignment!
+  scale_color_viridis_d(option = "turbo") +
+  scale_x_continuous(labels = scales::label_currency()) +
+  scale_size_continuous(labels = scales::comma_format())
+
+# Also works for `aes()` other than axes (here: changes the labeling of the "size"
+# mapping in the legend).
+```
+
+# Bonus: Animations
+
+```{r}
+library(gganimate)
+library(transformr)
+library(gifski)
+```
+
+First we specify our animation. This is just a ggplot with a variable for transitioning (in our case: `year`), and some optional other parameters (like how to handle/ease transitions between frames):
+
+```{r}
+animation <- 
+  
+  # First the plot:
+  
+  gapminder |> # Notice we use gapminder (the data for all years)!
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    # We change the subtitle to show the Years during the animation.
+    # You can access the current frame (year) with `closest_state`
+    subtitle = "Year: { closest_state }",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population",
+    caption = "Data: Gapminder"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  scale_x_continuous(labels = scales::label_currency()) +
+  scale_size_continuous(labels = scales::comma_format()) +
+  
+  # Then what variable to animate/transition on:
+  
+  transition_states(states = year, transition_length = 2, state_length = 1) +
+  ease_aes('linear') +
+  exit_fade()
+```
+
+Then we animate it. You can use different backends & formats; here, we want to export to a GIF using `gifski`:
+
+```{r}
+animate(
+  animation,
+  duration = 8,
+  fps = 30,
+  width = 700,
+  height = 500,
+  renderer = gifski_renderer()
+)
+```
+
+If you want to, you can save it:
+
+```{r eval=FALSE}
+anim_save("animation.gif") # saves the last animation by default
+```
+

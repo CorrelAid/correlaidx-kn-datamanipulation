@@ -1,39 +1,29 @@
 ![CorrelAid X Konstanz Header](https://github.com/CorrelAid/correlaidx-kn-datamanipulation/blob/main/header.png?raw=true)
 
-# CorrelAidXKonstanz - Datenbereinigung mit R
+# CorrelAidXKonstanz - Data Manipulation with R
 
-Herzlich Willkommen zu unserem Workshop zur **Datenbereinigung mit R**!
+Welcome to the workshop "Data Manipulation with R"! This is meant as a follow-up to the "Intro to R", so it is recommended you take this workshop beforehand.
 
 ## Download
-- Die Materialien zum Workshop können [hier](https://github.com/ZoeWolter/CorrelAidXKonstanz-DataManipulation/archive/main.zip) heruntergeladen werden.
-- Danach die Datei entzippen und in dem Ordner speichern, wo das R-Projekt abgelegt werden soll.
-- Öffnen des R-Projekts über die Datei *data-manipulation.Rproj*
 
-## Workshop
+1. [Click here](https://github.com/CorrelAid/correlaidx-kn-datamanipulation/archive/refs/heads/main.zip)
+2. Unzip the downloaded folder
+3. Open workshop.Rproj
 
-**Tag 1:**
-- Getting started: 
-  - Daten importieren
-  - Übersicht über den Datensatz verschaffen 
-  - Die Pipe
-  - Attributes
-- Datenmanipulation aka die `dplyr`-Verben:
-  - filter
-  - arrange
-  - select
-  - mutate
-  - summarize
-  - group_by
-- Datentypen und Outlier: 
-  - Vektoren und andere Datentypen
-  - NA's
-  - Outlier finden 
+Or:
 
-**Tag 2:**
-- Datensätze zusammenfügen:
-  - Verschiedene Arten an Joins
-  - `dplyr`-Joins
-- String-Manipulation:
-  - Umgang mit Umlauten
-  - Regex
-- Hands-On Session
+```
+git clone https://github.com/CorrelAid/correlaidx-kn-datamanipulation 
+```
+
+## Workshop (Preliminary)
+
+**Day 1:**
+
+1. Intro: dplyr verbs & piping
+2. Visualizations: brief introduction to `ggplot2` 
+
+**Day 2:**
+
+3. Importing data & exploratory analysis
+4. Advanced manipulations: reshaping & merging data

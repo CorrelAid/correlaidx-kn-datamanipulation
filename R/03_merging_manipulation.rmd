@@ -1,0 +1,155 @@
+---
+title: "Merging & manipulating data"
+output: 
+  html_document:
+    highlight: pygments
+    df_print: tibble
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+bf <- readr::read_csv(here::here("data", "bigfoot.csv"))
+```
+
+# Reshaping (pivoting)
+
+Remember when we did this earlier:
+
+```{r}
+bf |> summarise(across(everything(), function(x) sum(is.na(x))))
+```
+
+It looked kind of stupid, right? It's too... wide?! Wouldn't it be better if we had a column that holds the variable, and one that holds the number of missing values? Then we could also use all of our tricks (`arrange()` etc.) again! The solution comes from the `tidyr`-package, part of the tidyverse & dplyr's "brother":
+
+```{r}
+wide_data <- bf |> summarise(across(everything(), function(x) sum(is.na(x))))
+
+wide_data |> 
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "missings")
+```
+
+Using our tricks again to find the variables with the most missings:
+
+```{r}
+wide_data |> 
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "missings") |> 
+  arrange(desc(missings))
+```
+
+"Wide" data is common in the wild. For example, the World Bank Development Indicators come in this format:
+
+```{r}
+fertility <- readr::read_csv(here::here("data", "wbi_fertility.csv"))
+fertility
+```
+
+Let's put this one into long format as well:
+
+```{r}
+fert_long <- 
+  fertility |> 
+  pivot_longer(
+    cols = -starts_with("Country"),
+    names_to = "year",
+    values_to = "fertility"
+  )
+
+fert_long
+```
+
+**Exercise time:** Look at the documentation for `?pivot_wider()`. Try to use it to put our long data frame (`fert_long`) back into the original "wide" format! *Tip:* If you scroll down in the documentation, you get to the code examples. Examples often say more than a thousand explanations... *Tip 2:* You only need two of the arguments: `names_from` and `values_from`.
+
+```{r}
+# Your code here
+```
+
+# Merging (joining)
+
+Let's say we are interested in the relationship between female education & birth rates. We have now gotten our data on education in order, and we have attained data on female education:
+
+```{r}
+educ <- readr::read_csv(here::here("data", "wbi_education.csv"))
+```
+
+**Exercise time:** Thanks to the World Bank, the data is again in wide format (oh no!). Fix this using `pivot_longer()`! The variable is the ratio of high school age females out of school, so give it an appropriate name.
+
+```{r}
+# Your code here
+```
+
+Okay, now we have both datasets in order... But, how do we put them together? If we look closely, we see that both of them share three columns: `CountryName` & `CountryCode`, and of course the `year`, which we can use to match observations!
+
+There are different ways of merging (or "joining") the education data to our fertility data:
+
+![](../assets/joins.png)
+
+Here is the solution for above btw (needed for joining):
+
+```{r}
+educ <- 
+  educ |> 
+  pivot_longer(
+    cols = -starts_with("Country"),
+    names_to = "year",
+    values_to = "females_out_of_school"
+  )
+```
+
+
+For example:
+
+```{r}
+left_join(fert_long, educ, by = c("CountryCode", "year"))
+```
+
+Keeps all observations from `fert_long`, and adds matching observations from `educ` based on CountryCode and year. A `right_join()` would do the opposite. An `inner_join()` only keeps CountryCode-year combinations that exist in both data frames, and a `full_join()` keeps all that exist in *either* of the two. Let's stick to an `inner_join()`:
+
+```{r}
+full <- 
+  fert_long |> 
+  inner_join(educ, by = c("CountryCode", "year")) |> 
+  select(-starts_with("CountryN")) |>
+  rename("country" = CountryCode) |> 
+  mutate(across(c(fertility, females_out_of_school), as.numeric)) |> 
+  drop_na()
+
+full
+```
+
+Now that we have the two data sets together & clean, we can finally do our analysis! This time we will not do normal OLS (`lm()`) like the last times. Since R is a language built from the ground up for statistics, there are modelling packages for just about anything. Here, as an example, we will estimate the within-country effect to adjust for time-invariant heterogeneity between countries, using a fixed-effects model:
+
+```{r}
+library(fixest)
+
+model <- feols(
+  fertility ~ females_out_of_school, 
+  data = full, 
+  fixef = "country", # country fixed-effects
+  vcov = ~country    # standard errors clustered by country (vcov = Variance-Covariance matrix)
+)
+
+summary(model)
+```
+
+(Again I caution against any interpretation, we are not doing serious stuff here; this is just an example without substantive meaning)
+
+That concludes the workshop - if you would like to continue learning R, I attached an extra html with useful links & tips. You can keep the course materials and always come back to them to revisit stuff.
+
+If you need help with your own projects or data (e.g. term papers or BA thesis), feel free to reach out to us, we are happy to help. Also you are all happily invited to get in touch with correlaid if you enjoy working with data!
+
+Happy Coding everybody!
+
+<center>
+![](../assets/happy_coding.png)
+</center>
