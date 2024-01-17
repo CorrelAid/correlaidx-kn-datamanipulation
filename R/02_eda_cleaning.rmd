@@ -185,9 +185,50 @@ model |>
   filter(term != "(Intercept)") |> 
   ggplot(aes(x = estimate, y = forcats::fct_reorder(term, estimate))) + 
   geom_vline(xintercept = 0, color = "darkgrey") +
-  geom_point() + 
-  geom_errorbar(aes(xmin = lower, xmax = upper), width = 0.1)
+  geom_pointrange(aes(xmin = lower, xmax = upper))
 ```
+
+One thing we have not discussed yet is string manipulation. Look at the y-axis labels: We may want to format the names a bit nicer. We can do this by modifying the strings (names) in the "term"-column:
+
+```{r}
+tidy_model <- 
+  model |> 
+  broom::tidy() |> # seen last week; turns model output into data frame
+  mutate(lower = estimate - std.error, upper = estimate + std.error) |> 
+  filter(term != "(Intercept)")
+
+tidy_model
+```
+
+For everything with strings, use [`stringr`](https://stringr.tidyverse.org/):
+
+```{r}
+library(stringr)
+
+tidy_model <- 
+  tidy_model |> 
+  mutate(
+    term = 
+      term |> # take term, *and then...*
+      # The syntax of stringr is quite intuitive:
+      str_replace("_", " ") |> 
+      str_to_title() |> 
+      str_replace("Uv", "UV")
+  )
+
+tidy_model |> select(term)
+```
+
+Plotting again:
+
+```{r}
+tidy_model |> 
+  ggplot(aes(x = estimate, y = forcats::fct_reorder(term, estimate))) + 
+  geom_vline(xintercept = 0, color = "darkgrey") +
+  geom_pointrange(aes(xmin = lower, xmax = upper)) +
+  labs(x = "Coefficient estimate", y = "", title = "Predictors of reliable bigfoot sightings")
+```
+
 
 ### Exporting your models
 

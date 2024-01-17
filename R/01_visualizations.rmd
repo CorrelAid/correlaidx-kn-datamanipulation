@@ -26,7 +26,7 @@ gm <- gapminder |> filter(year == 2007) # let's stick to one year for now...
 
 # The data analysis process
 
-![The data analysis process]("figures/process.png")
+![The data analysis process](../assets/process.png)
 
 So far, you have (hopefully) looked at how to import data, and how to interact with it; maybe done some basic tidying. We now want to do some more tidying, and move into the circle of exploring, transforming, and analyzing your data.
 

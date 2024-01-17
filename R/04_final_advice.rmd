@@ -13,7 +13,7 @@ editor_options:
 
 [Some general advice is found here](https://r4ds.hadley.nz/workflow-help). If `help()` or `?` is of no use, start with *Google*. For almost any problem you encounter, chances are someone has been in a similar situation before. 
 
-Best advice is usually found on [StackOverflow](https://stackoverflow.com/) (although generally toxic and with completely arbitrary rules), [reddit](https://www.reddit.com/) is also fine sometimes (there are like five or six subreddits dedicated to R), but in my experience it also generates really poor advice sometimes. On 4chan's technology board [/g/](https://boards.4chan.org/g/catalog), there are daily programming threads (/dpt/), in which people help each other; many competent people, but *extremely* toxic. [ChatGPT](https://chat.openai.com/auth/login) can also help you with code, but it sometimes hallucinates packages or functions that don't exist or do something different. Lastly, I can recommend the [R-help mailing list](https://stat.ethz.ch/mailman/listinfo/r-help) for non-trivial problems & keeping up-to-date. But follow the [etiquette](https://www.r-project.org/posting-guide.html) and don't use this for trivial problems.
+Best advice is usually found on [StackOverflow](https://stackoverflow.com/) (although generally toxic and with completely arbitrary rules), [reddit](https://www.reddit.com/) is also fine sometimes (there are like five or six subreddits dedicated to R), but in my experience it may also generate poor advice. On 4chan's technology board [/g/](https://boards.4chan.org/g/catalog), there are daily programming threads (/dpt/), in which people help each other; many competent people, but *extremely* toxic. [ChatGPT](https://chat.openai.com/auth/login) can also help you with code, but it sometimes hallucinates packages or functions that don't exist or do something different. Lastly, I can recommend the [R-help mailing list](https://stat.ethz.ch/mailman/listinfo/r-help) for non-trivial problems & keeping up-to-date. But follow the [etiquette](https://www.r-project.org/posting-guide.html) and don't use this for trivial problems.
 
 ### General advice
 
@@ -28,9 +28,13 @@ Best advice is usually found on [StackOverflow](https://stackoverflow.com/) (alt
 
 ...and lastly the most important bit of advice:
 
-*insert image*
+<center>
+![](../assets/coding.jpg){width=500px}
+</center>
 
 ## Packages
+
+You can click on the package names for more infos.
 
 ### Modelling
 
@@ -49,6 +53,8 @@ For most ways of storing data, there is probably some way to interact with it in
 
 * STATA or SPSS files: [`haven`](https://haven.tidyverse.org/) (for importing & exporting), [`labelled`](https://cran.r-project.org/web/packages/labelled/vignettes/intro_labelled.html) (for dealing with "labelled" data, which exists in STATA & SPSS, but which base R does not really have a concept of)
 * Excel-files: [`readxl`](https://readxl.tidyverse.org/) & tons of others
+
+...when in doubt: just google it.
 
 ## You want to git gud at R?
 
