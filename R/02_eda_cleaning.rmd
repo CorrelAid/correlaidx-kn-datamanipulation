@@ -241,7 +241,7 @@ stargazer::stargazer(model, type="html")
 ```{r}
 model |> 
   modelsummary::modelsummary(
-    stars = c("***" = 0.01, "**" = 0.05, "*" = 0.01),
+    stars = c("***" = 0.01, "**" = 0.05, "*" = 0.1),
     coef_map = c(
       "temperature_mid" = "Temperature",
       "humidity" = "Humidity",
