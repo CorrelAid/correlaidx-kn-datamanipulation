@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 # File management & projects: how to stop yourself from making a mess
+
 <center>
 ![](../assets/xkcd.png)
 </center>
@@ -25,6 +26,32 @@ If we want to import data into R, we need to tell R where to find the file we wa
 However, one of the pillars of science is reproducibility: if you hand in your thesis, or publish a paper, and someone wants to reproduce your results, and your code includes something like `setwd("Users/Me/Documents/Stuff/Uni/BA/FolderOnlyIHave/MoreStuff/")`, *No one* except you will be able to run it. Even worse, what if you import files only you have?
 
 Solution: stay organized. [Here](https://alexd106.github.io/intro2R/project_setup.html) is a guide on how to set up a clean and reproducible project and use `.Rproj`ects, and [here](https://here.r-lib.org/) you can find the `here`-package, which allows you to side-step file path nightmares. 
+
+## Quick rundown: Setting up a reproducible project 
+
+1. Create a folder for your project in a proper location. Create separate folders for your code and your data inside of the project folder:
+
+<center>
+![](../assets/project_folder.png){width=500px}
+</center>
+
+2. In RStudio, in the top left, go to File > New Project... . In the popup, select "Existing directory" & select your directory:
+
+<center>
+![](../assets/project_popup.png){width=500px}
+</center>
+
+<center>
+![](../assets/select_project.png){width=600px}
+</center>
+
+This will put you into the project. To select/change the current project, use the little Project-button in the top-right:
+
+<center>
+![](../assets/project_view.png){width=800px}
+</center>
+
+Projects are a clean way of separating multiple different... well, projects & they allow you to use relative paths from where the `.Rproj`-file resides using the `here`-package (for example, when inside your project, to read a file from "data", the path would just be "data/file"). Double-clicking a `.Rproj`-file should also open the project in RStudio. Projects also allow you to ship your project self-contained: anyone can open the project and reproduce, no need to deal with file paths etc.
 
 # Let's work on some real data
 
