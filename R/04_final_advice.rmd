@@ -11,13 +11,17 @@ editor_options:
 
 ### On getting help
 
-[Some general advice is found here](https://r4ds.hadley.nz/workflow-help). If `help()` or `?` is of no use, start with *Google*. For almost any problem you encounter, chances are someone has been in a similar situation before. 
+[Some general advice is found here](https://r4ds.hadley.nz/workflow-help). If `help()` or `?` is of no use, start with *Google*. For almost any problem you encounter, chances are someone has been in a similar situation before...
+
+<center>
+![](../assets/googling.jpeg){width=400px}
+</center>
 
 Best advice is usually found on [StackOverflow](https://stackoverflow.com/) (although generally toxic and with completely arbitrary rules), [reddit](https://www.reddit.com/) is also fine sometimes (there are like five or six subreddits dedicated to R), but in my experience it may also generate poor advice. On 4chan's technology board [/g/](https://boards.4chan.org/g/catalog), there are daily programming threads (/dpt/), in which people help each other; many competent people, but *extremely* toxic. [ChatGPT](https://chat.openai.com/auth/login) can also help you with code, but it sometimes hallucinates packages or functions that don't exist or do something different. Lastly, I can recommend the [R-help mailing list](https://stat.ethz.ch/mailman/listinfo/r-help) for non-trivial problems & keeping up-to-date. But follow the [etiquette](https://www.r-project.org/posting-guide.html) and don't use this for trivial problems.
 
 ### General advice
 
-* **DRY**: **D**on't **R**epeat **Y**ourself! Copy-paste leads you to make mistakes; there is probably a smarter way of achieving the same, you are using a programming language after all...
+* **DRY**: **D**on't **R**epeat **Y**ourself! Copy-paste leads you to make mistakes; there is probably a smarter way of achieving the same (like writing a function), you are using a programming language after all
 * **Organize** & name your files coherently (if your project folder contains names like "script.R", "script_final.r", "script_final2.R", "scriptMarch23.r", "script_latest.r", I will find you and I will kill you).
 * Don't use `setwd()`; use Rprojects & [`here`](https://here.r-lib.org/) - it's important for reproducibility to keep your projects self-contained! Reproducibility is one of the pillars of science! (for more details on *how* to do this when using R, click [here](http://jenrichmond.rbind.io/post/how-to-use-the-here-package/) or for more on *why* [here](https://www.tidyverse.org/blog/2017/12/workflow-vs-script/))
 * **Comment** your code! Even if noone else is going to read it, future-you will thank you! What seems obvious now may seem like a (potentially insane) stranger has written it when you come back from your holiday break!
@@ -41,7 +45,7 @@ You can click on the package names for more infos.
 * Linear regression diagnostics: [`lmtest`](https://www.rdocumentation.org/packages/sandwich/versions/3.1-0)
 * Robust SEs for for cross-sectional, time series etc: [`sandwich`](https://www.rdocumentation.org/packages/sandwich/versions/3.1-0)
 * Fixed-effects & co: [`fixest`](https://cran.r-project.org/web/packages/fixest/vignettes/fixest_walkthrough.html) (which I personally recommend), [`plm`](https://cran.r-project.org/web/packages/plm/vignettes/A_plmPackage.html) (long-time standard, but a bit awkward to use (data structures, SEs etc.)), ...
-* For presenting results: [`stargazer`](https://cran.r-project.org/web/packages/stargazer/vignettes/stargazer.pdf) (the "classic"; very easy to get nice-looking tables, but an absolute pain if you want to do anything out of the ordinary without a Latex-massacre), [`modelsummary`](https://modelsummary.com/) (insane defaults, but combines nicely with other packages, as shown in the docs), ...
+* For presenting results: [`stargazer`](https://cran.r-project.org/web/packages/stargazer/vignettes/stargazer.pdf) (the "classic"), [`modelsummary`](https://modelsummary.com/) (sometimes questionable defaults, but combines nicely with other packages, as shown in the docs & is generally more flexible than stargazer if you don't want to edit latex yourself), ...
 
 ### Spatial data
 
