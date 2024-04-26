@@ -1,0 +1,308 @@
+---
+title: "Intro to the tidyverse"
+author: "Lennart Kasserra"
+institute: "CorrelAid"
+format: 
+  revealjs:
+    theme: [default, custom.scss]
+    fontsize: 30px
+    slide-level: 1
+    scrollable: true
+editor_options: 
+  chunk_output_type: console
+execute:
+  eval: false
+  message: false
+  warning: false
+  collapse: true
+  echo: true
+  comment: "#>"
+date: "2024-04-22"
+---
+
+# Contents
+
+* `dplyr`-verbs
+* "Piping"
+
+# `dplyr`
+
+When working with data, you have to:
+
+1. Figure out what to do
+2. Describe those tasks in the form of a computer program
+3. Run the program
+
+[`dplyr`](https://dplyr.tidyverse.org/index.html) provides a set of simple "verbs" that correspond to the most common data manipulation tasks (like `select()`, `filter()`, `summarise()`, `mutate()` & `arrange()`) and a coherent "grammar" to make it easy to translate your thoughts into code.
+
+# Data
+
+We will be working with the "Gapminder"-data for this section, which comes as an R package:
+
+<div class=big-code>
+```{r}
+install.packages("gapminder") # only needed once
+library(gapminder) # load package
+
+data("gapminder") # load the data 
+```
+</div>
+
+# `dplyr` verbs
+
+* Grammar of data manipulation focussed around "verbs":
+  - `select()`
+  - `filter()`
+  - `mutate()`
+  - `summarise()`
+  - ...
+
+```{r}
+library(dplyr) # load package
+```
+
+# `select()`
+
+Pick or drop columns based on their name
+
+```{r}
+select(.data = gapminder, country, year, lifeExp)
+```
+
+Or:
+
+```{r}
+gapminder |> select(country, year, lifeExp)
+```
+
+Wait... what is `|>`???
+
+# Piping
+
+The "pipe" (`|>` or `%>%`) takes what is on the left-hand side, and hands it to the function on the right-hand side. 
+
+* Read the pipe in your head as *and then...*
+
+# Piping
+
+Take `gapminder`, *and then* `select` these columns:
+
+```{r}
+gapminder |> select(country, year, lifeExp)
+```
+
+# Advanced `select()`
+
+```{r}
+# Dropping columns (negative selection):
+gapminder |> select(-continent)
+gapminder |> select(-c(continent, pop))
+
+# Selecting columns by name patterns:
+gapminder |> select(starts_with("c"))
+gapminder |> select(ends_with("p"))
+gapminder |> select(contains("p"))
+
+# Select from:to
+gapminder |> select(country:lifeExp)
+
+# Select based on condition:
+gapminder |> select(where(is.numeric))
+
+# Select to reorder:
+gapminder |> select(country, year, everything())
+```
+
+# `filter()`
+
+Keep rows that match a condition
+
+* Equals (`==`), not equal (`!=`), not (`!`), or (`|`), and (`&`) (`,` also is treated as `&`)
+* Check for missings with `is.na`
+* `between()` & `near()`
+
+```{r}
+gapminder |> filter(continent == "Asia")
+gapminder |> filter(year != 2007)
+
+gapminder |> 
+  filter(
+    year == 2007, 
+    continent %in% c("Asia", "Europe"),
+    pop > 1e7
+  )
+```
+
+# Laying down pipe
+
+:::: {.columns}
+
+::: {.column width="70%"}
+
+Piping also allows us to combine steps:
+
+```{r}
+gapminder |> 
+  filter(continent == "Europe" & year == 2007) |> 
+  select(country, lifeExp, gdpPercap)
+```
+
+Take `gapminder`, *and then* `filter` on the given condition, *and then* `select` the given columns.
+:::
+
+::: {.column width="30%"}
+![](../assets/laying_pipe.jpg)
+:::
+
+::::
+
+# Laying down pipe {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+Theoretically, you could also nest function calls:
+
+```{r}
+select(
+  filter(gapminder, continent == "Europe" & year == 2007), 
+  country, lifeExp, gdpPercap
+)
+```
+
+But the piped version is usually preferrable & more readable! It can be read sequentially, while this has to be read from the inside out...
+
+:::
+
+::: {.column width="50%"}
+
+![](../assets/nested_vs_pipe.png)
+
+:::
+
+::::
+
+# Assignment
+
+Assign the resulting object to a name to keep it:
+
+```{r}
+europe <- 
+  gapminder |> 
+  filter(continent == "Europe" & year == 2007) |> 
+  select(country, lifeExp, gdpPercap)
+```
+
+*Theoretically*, R also allows right-hand assignment:
+
+```{r}
+gapminder |> 
+  filter(continent == "Europe" & year == 2007) |> 
+  select(country, lifeExp, gdpPercap) -> europe
+```
+
+# `arrange()`
+
+Order rows (observations) using values of a column:
+
+```{r}
+gapminder |> arrange(lifeExp)
+gapminder |> arrange(desc(pop))
+```
+
+# `summarise()`
+
+Compute summaries:
+
+```{r}
+gapminder |> 
+  filter(year == 2007) |> 
+  summarise(mean_life_exp = mean(lifeExp))
+```
+
+# `group_by()` and `summarise()`
+
+Aggregate or compute summaries *by group* (here: `continent`):
+
+```{r}
+gapminder |> 
+  filter(year == 2007) |>
+  group_by(continent) |> 
+  summarise(mean_life_exp = mean(lifeExp))
+```
+
+Don't forget to `ungroup()` your data (or set `.groups = "drop"`) if you don't want to do later computations by groups.
+
+* `group_by()` and `summarise()` are *best friends* and *very powerful!*
+
+# `mutate()`
+
+Create or modify columns:
+
+```{r}
+gapminder |> mutate(pop_million = pop / 1e6)
+
+gapminder |> 
+  mutate(
+    gdp = gdpPercap * pop, 
+    pop_million = pop / 1e6
+  )
+```
+
+# `rename()`
+
+Self-explanatory... The pattern is `data |> rename(new_name = old_name)`
+
+```{r}
+gapminder |> rename(life_exp = lifeExp, gdp_pc = gdpPercap)
+```
+
+Protip: you can also rename inside `select()` (*think:* `select` col *as* name):
+
+```{r}
+gapminder |> select(life_exp = lifeExp, gdp_pc = gdpPercap)
+```
+
+# Other useful mini-verbs {.scrollable}
+
+* `count()`: Count number of observations of unique values:
+
+```{r}
+gapminder |> 
+  filter(year == 2007) |> 
+  count(continent) |> 
+  arrange(desc(n))
+```
+
+* `n()`: Size of current group (like `count()` for use with `group_by()` & `summarise()`):
+
+```{r}
+gapminder |> 
+  filter(year == 2007) |> 
+  group_by(continent) |> 
+  summarise(n_obs = n(), mean_life_exp = mean(lifeExp))
+```
+
+* `slice()`: Subset rows by position:
+
+```{r}
+gapminder |> slice(1:10)
+```
+
+* `distinct()`: Keep distinct/unique rows:
+
+```{r}
+gapminder |> distinct() # drops duplicate rows
+gapminder |> distinct(country) # shows unique obs. of "country" (all countries)
+```
+
+
+# Exercise Time
+
+1. What countries were top 10 in life expectancy (`lifeExp`) in 1952? Which were the top 10 in 2007? What changes do you see (in terms of countries and in terms of life expectancy)?
+2. Compute overall by continent in 2007:
+  a. Mean life expectancy
+  b. mean GDP per capita
+  c. *Bonus:* Do the same for 1952. What changes do you see?
+3. Add a new variable to the `gapminder` data set: Total GDP in billion USD (we can assume that GDP = `gdpPercap` $\times$ `pop`). *Bonus:* In 2007, which countries had the highest total GDP? *Bonus-Bonus:* add the logarithm (natural or base 10) of the gdp as a new variable to the dataset.

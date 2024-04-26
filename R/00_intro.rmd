@@ -46,83 +46,32 @@ If you haven't already:
   
 4. Make yourself feel at home: If you're done early, under Tools > Global Options > Appearance you can change the theme etc
 
-# Quick refresher: data types and structures in R
+# The `tidyverse` and "tidy" data
 
-We will use data from [Gapminder](https://www.gapminder.org/) for our examples, which is provided as an R-package:
+In this workshop, we will use the [tidyverse](https://www.tidyverse.org/), which is a collection of R packages designed to make data manipulation and analysis as easy and coherent as possible. The tools are based around the concept of "tidy data":
+
+<center>
+![](../assets/tidy_data_definition.jpg)
+</center>
+
+<center>
+![](../assets/tidy_datasets_are_alike.jpg)
+</center>
+
+<center>
+![](../assets/tidy_vs_untidy.jpg)
+</center>
+
+*Artworks by* [*@allison_horst*](https://twitter.com/allison_horst)
+
+Today you will learn about the tools you can use with tidy data (including visualizations), and tomorrow you will learn how to (1) keep your projects tidy as well, and (2) turn messy into tidy data.
+
+For our examples, we will use data from [Gapminder](https://www.gapminder.org/) for our examples, which is provided as an R-package:
 
 ```{r}
 library(gapminder)
 data("gapminder")
-
-gapminder
 ```
-
-You can see that `gapminder` is a "tibble" and that the columns have different types, like `fct`, `int`, `dbl`... But what does any of that mean?
-
-Fundamentally, everything in R is a "vector", meaning (in R!) a collection of elements or objects. Vectors split into "atomic" vectors, where every object needs to have the same "type", and `list`s that can hold anything:
-
-<center>
-![](../assets/vectors.png){width=500px}
-</center>
-
-All the columns in `gapminder` are "atomic" vectors: they all hold elements of the same type. There is a number of different data types in R:
-
-<center>
-![](../assets/atomic_vectors.png){width=500px}
-</center>
-
-* Logical `<lgl>`: `TRUE` or `FALSE`.
-* Numeric `<num>`: Numbers.
-  - Integer `<int>`: whole numbers
-  - Double `<dbl>`: numbers with decimal places (allowed) ("double-precision floating point")
-* Character `<chr>`: strings (words or characters, like "aaa")
-* Factor `<fct>`: Categorical data
-  - Unordered
-  - Ordered
-* Date `<date>`: Dates (day-accurate)
-* POSIXct `<dttm>` or `<POSIXct>`: Date-time with (sub-)second accuracy
-
-Atomic vectors are created with `c()` ("combine"), and R will infer the type automatically:
-
-```{r}
-vector_1 <- c(1:4) # read "1 to 4"
-typeof(vector_1)
-vector_2 <- c("abc", "a word", "this is a really long sentence")
-typeof(vector_2)
-```
-
-You can always check the data type of a vector with `typeof()`, check whether it is a specific type with `is.*()`, e.g. `is.character()`.
-
-Let's take a look lists which allow us to store heterogenous objects:
-
-<center>
-![](../assets/lists.png){width=500px}
-</center>
-
-* Data frame `data.frame`: Strictly speaking, a data frame is a list of atomic vectors of the same length.
-* Tibble `tibble`, `tbl`, `tbl_df`: An extension of the data frame (which prints nicer and is a bit more coherent) (think of "tibble" as "table"). 
-
-...most of the time, you will probably be working with data frames/tibbles. Data frames are created with `data.frame()`, `tibble()`, `as.data.frame()` or `as_tibble()`. You can access the individual atomic vectors inside a data frame with `$` or `[[` like this:
-
-```{r eval=FALSE}
-gapminder$gdpPercap
-gapminder[["gdpPercap"]]
-```
-
-## Objects vs. functions
-
-You can apply functions to objects, like `mean()` or `median()` which do something to the objects:
-
-```{r}
-mean(gapminder$gdpPercap)
-median(gapminder$gdpPercap)
-```
-
-Fundamentally:
-
-> Everything that exists in R is an object. Everything that happens is a function call. - John M. Chambers
-
-Enough theory, let's work with some data. In this workshop, we will use the [tidyverse](https://www.tidyverse.org/), which is a collection of R packages designed to make data manipulation and analysis as easy and coherent as possible.
 
 # `dplyr`-verbs
 
@@ -142,28 +91,41 @@ library(dplyr)
 
 **Selecting:**
 
-Let's find out together how `select()` works:
+If you look at `?select`, you will see that it has two arguments:
 
-```{r eval=FALSE}
-?select # or: help(select)
-```
+1. `.data`, which is the data frame from which to select variables, and
+2. `...`, which variables to select.
 
-R has great built-in documentation you can *always* use to look things up if you don't remember something or want to learn something new.
+For example:
 
 ```{r}
-select(gapminder, country, year, lifeExp)
+select(.data = gapminder, country, year, lifeExp)
 ```
 
-But for `dplyr`-verbs, the data is always the first argument, so we can "pipe":
+Another way of writing the same thing is using the "pipe" operator (`|>` or `%>%`)[^operators] : it takes what is on its left-hand side and hands it to the function on the right-hand side[^pipe]. If this sounds complicated, just read the pipe in your head as "and then...":
+
+[^operators]: `%>%` is the original tidyverse-pipe introduced in the magrittr-package, while `|>` is the base R pipe (has only been around since R4.1). On the surface they don't really differ, except for a different placeholder (a concept we will discuss later), but the base R pipe is a lot faster, and it looks cooler imo (also it looks like a big arrow to the right if you squint a bit, which conveys its purpose a lot better). Below the surface (for the R nerds), `rlang::expr(f(x)) == rlang::expr(x |> f())` is `TRUE`, while `rlang::expr(f(x)) == rlang::expr(x %>% f())` evaluates to `FALSE`, because the tidyverse-pipe engages in data masking (which makes it slower & produces the infamous traceback-vomit if you get errors in pipelines), while to the R interpreter `x |> f()` is *literally the exact same* as `f(x)`, so there is no performance overhead. Consider `rlang::expr(x |> f())` even evaluates to `f(x)`. The `%>%` pipe is a bit more flexible in some edge cases, but I would consider most of them bad practices anyway.
 
 ```{r}
 gapminder |> select(country, year, lifeExp)
-gapminder |> select(-c(continent, pop))
-
-gapminder |> select(starts_with("c"))
 ```
 
-The "pipe" (`|>` or `%>%`) takes what is one the left side, and hands it to the function on the right-hand side as the first argument. Sounds complicated? Just read the pipe in your head as "and then...". So: Take `gapminder` *and then* `select()` the columns.
+Take `gapminder`, *and then* `select` the variables `country`, `year` and `lifeExp`. Some other useful tricks include:
+
+[^pipe]: As the first argument
+
+```{r eval=FALSE}
+# Dropping columns (negative selection):
+gapminder |> select(-continent)
+gapminder |> select(-c(continent, pop))
+
+# Selecting columns by name patterns:
+gapminder |> select(starts_with("c"))
+gapminder |> select(ends_with("p"))
+
+# Select from:to
+gapminder |> select(country:lifeExp)
+```
 
 You can also select `everything()`, which selects... well, everything, kind of. You can use it e.g. to reorder columns (here, it will select those explicitly called upon first, and then `everything()` else):
 
@@ -171,18 +133,21 @@ You can also select `everything()`, which selects... well, everything, kind of. 
 gapminder |> select(pop, gdpPercap, everything())
 ```
 
+**Filtering:** Subset your data, keeping rows that match a condition. Useful logics:
 
-**Filtering:** Subset your data!
+* Equals (`==`), not equal (`!=`), not (`!`), or (`|`), and (`&`)
+* Check for missings with `is.na`
+* `between()` & `near()`
 
 ```{r}
 gapminder |> filter(continent == "Asia")
-gapminder |> filter(year == 2007)
+gapminder |> filter(year != 2007)
 
 gapminder |> 
   filter(year == 2007 & continent %in% c("Asia", "Europe") & pop > 1e7)
 ```
 
-With the pipe, we can also combine these steps easily:
+Now that we know two functions, we can see why piping is one of the most powerful ideas in R. Say we want country names, life expectancy & GDP per capita for all European countries in 2007. We can combine a `filter()` and a `select()`ion into a pipeline:
 
 ```{r}
 gapminder |> 
@@ -190,7 +155,24 @@ gapminder |>
   select(country, lifeExp, gdpPercap)
 ```
 
-Think: take `gapminder` *and then* `filter()` it *and then* `select()` these columns.
+Take `gapminder`, and then `filter` for `continent == "Europe` and `year == 2007`, and then `select` the variables `country`, `lifeExp` and `gdpPercap`. If we want to keep this, we can then assign the result of our pipeline:
+
+```{r}
+europe <- 
+  gapminder |> 
+  filter(continent == "Europe" & year == 2007) |> 
+  select(country, lifeExp, gdpPercap)
+```
+
+Since R supports right-hand assignment, we can write this even more intuitively:
+
+```{r}
+gapminder |> 
+  filter(continent == "Europe" & year == 2007) |> 
+  select(country, lifeExp, gdpPercap) -> europe
+```
+
+Be warned though that many people consider right-hand assignment "bad practice" and more of a gimmick (for example it's hard to see that there is an assignment operation happening here if you just skim the code).
 
 **Arranging:**
 
@@ -225,19 +207,27 @@ gapminder |>
   select(country, year, "life_exp" = lifeExp, "gdp_pc" = gdpPercap)
 ```
 
-**Summarising:**
+**Summarising:** Compute summary values
 
 ```{r}
 gapminder |> 
   filter(year == 2007) |> 
   summarise(mean_life_exp = mean(lifeExp, na.rm = TRUE))
-# Why not `mean()`? E.g. for grouped operations:
+```
 
+You may ask yourself: why not just use `mean` at this point[^pull]? `summarise` only really shines when combined with `group_by()` to compute grouped summary statistics or aggregates:
+
+[^pull]: Another way to write this would use `pull()` to pull a single vector out of a dataframe: `gapminder |> filter(year == 2007) |> pull(lifeExp) |> mean(na.rm = TRUE)`
+
+```{r}
 gapminder |> 
+  filter(year == 2007) |>
   group_by(continent) |> 
   summarise(mean_life_exp = mean(lifeExp, na.rm = TRUE)) |> 
   arrange(desc(mean_life_exp))
 ```
+
+Don't forget to `ungroup()` your data (or set `.groups = "drop"`) if you don't want to do later computations by groups.
 
 **Mutating:** Add new or overwrite existing variables:
 
@@ -268,7 +258,7 @@ gapminder |>
 gapminder |> 
   filter(year == 2007) |> 
   group_by(continent) |> 
-  summarise(N = n(), mean_life_exp = mean(lifeExp, na.rm = TRUE))
+  summarise(n_obs = n(), mean_life_exp = mean(lifeExp, na.rm = TRUE))
 ```
 
 For `group_by()`, if you continue your pipeline after `summarise()` or whatever you did *by group*, you may need to `ungroup()` (otherwise *everything* will be done by group). If you want to `arrange()` your grouped data, you may need to set `.by_group = TRUE` inside of `arrange()`.

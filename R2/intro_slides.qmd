@@ -1,0 +1,98 @@
+---
+title: "Data Manipulation and Visualization with R"
+author: "Lennart Kasserra"
+institute: "CorrelAid"
+format: 
+  revealjs:
+    theme: [default, custom.scss]
+    fontsize: 30px
+editor_options: 
+  chunk_output_type: console
+execute:
+  eval: false
+  message: false
+  warning: false
+  collapse: true
+  echo: true
+  comment: "#>"
+date: "2024-04-22"
+---
+
+# Welcome
+
+Welcome to the follow-up to the "Intro to R"! If you see this you have managed to download the files from GitHub, which already makes you smarter than tolly500:
+
+<center>
+![](../assets/github.jpg)
+</center>
+
+# Setup time
+
+:::: {.columns}
+
+::: {.column width="40%"}
+
+![](../assets/50cent_meme.jpg)
+
+:::
+
+::: {.column width="60%"}
+
+::: {style="font-size: 60%;"}
+
+If you haven't already:
+
+1. Install R:
+  - [Windows](https://cran.r-project.org/bin/windows/base/)
+  - [MacOS](https://cran.r-project.org/bin/macosx/) (make sure you select the right one based on whether you have an "old" intel mac or a new Apple silicon (M1/M2) mac)
+  - Linux: from package manager (probably either `R` or `r-base`)
+
+2. Install RStudio [from the official website](https://posit.co/download/rstudio-desktop/)
+
+3. Install packages: 
+
+  - once you are inside RStudio, head to the console (the little window that says "console"), enter `install.packages(c("tidyverse", "gapminder", "here", "markdown", "rmarkdown"))` and hit Enter.
+  - Enjoy epic hacker moment
+  
+4. Make yourself feel at home: If you're done early, under Tools > Global Options > Appearance you can change the theme etc
+
+:::
+
+:::
+
+::::
+
+# Course outline
+
+**Day 1:**
+
+1. Introduction to the Tidyverse
+  * `dplyr` verbs
+2. Data Visualization with `ggplot2`
+
+**Day 2:**
+
+3. Setting up reproducible projects
+4. Exploratory data analysis
+5. Data wrangling
+
+# Tidy data
+
+![*Artwork by* [*@allison_horst*](https://twitter.com/allison_horst)](../assets/tidy_data_definition.jpg)
+
+# Tidy data
+
+![*Artwork by* [*@allison_horst*](https://twitter.com/allison_horst)](../assets/tidy_datasets_are_alike.jpg)
+
+
+# Tidy data
+
+![*Artwork by* [*@allison_horst*](https://twitter.com/allison_horst)](../assets/tidy_vs_untidy.jpg)
+
+# Tidy data
+
+Our goal for today is to learn the basic toolset for tidy data, including common manipulations & visualizations.
+
+Tomorrow we will go beyond and discuss how to make untidy datasets tidy.
+
+* This course is unfortunately *very* condensed, but please feel free to still ask questions if you don't understand something or would like to know something that was not mentioned!

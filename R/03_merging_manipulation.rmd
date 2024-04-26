@@ -209,32 +209,32 @@ gapminder
 I will show you a little trick: using tidyr, you can nest your data e.g. by continent:
 
 ```{r}
-gapminder |> 
+nested <- 
+  gapminder |> 
   group_by(continent) |> 
   nest()
+
+nested
 ```
 
-Now you have little data frames inside your data frame! We can now do operations for all these separate data frames separately, but at once; for example fit a model to every subset (just simple pooled OLS):
+Now you have little data frames inside your data frame! We can now do operations for all these separate data frames separately, but at once; for example fit a model to every subset:
 
 ```{r}
 library(purrr)
 
 fitted <- 
-  gapminder |> 
-  group_by(continent) |> 
-  nest() |> 
+  nested |> 
   # "map" a function over each of the little tibbles:
-  mutate(model = map(data, function(df) lm(lifeExp ~ gdpPercap, data = df)))
+  mutate(model = map(data, \(df) lm(lifeExp ~ log10(gdpPercap) + factor(year), data = df)))
 
 fitted
 ```
 
-And we could look at where the model has the best fit (here by $R^2$):
+This adds another list column holding the models for every continent. Now we could look at where the model has the best fit (here by $R^2$):
 
 ```{r}
 fitted |> 
-  mutate(r2 = map(model, function(mod) summary(mod)$r.squared)) |> 
-  unnest(r2) |> 
+  mutate(r2 = map_dbl(model, \(mod) summary(mod)$r.squared)) |> 
   arrange(desc(r2))
 ```
 
@@ -244,7 +244,6 @@ Nested data can be useful e.g. if you are working with multiple rounds of a surv
 continent_list <- split(gapminder, gapminder$continent)
 continent_list
 ```
-
 
 # Fin
 

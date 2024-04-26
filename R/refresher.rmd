@@ -1,0 +1,92 @@
+---
+title: "Intro to the tidyverse: `dplyr`-verbs, Piping & Exploration"
+output: 
+  html_document:
+    highlight: pygments
+    df_print: tibble
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
+```
+
+This is a quick refresher for data types and structures you will commonly encounter. We will use data from [Gapminder](https://www.gapminder.org/) for our examples, which is provided as an R-package:
+
+```{r}
+library(gapminder)
+data("gapminder")
+
+gapminder
+```
+
+You can see that `gapminder` is a "tibble" and that the columns have different types, like `fct`, `int`, `dbl`... But what does any of that mean?
+
+Fundamentally, everything in R is a "vector", meaning (in R!) a collection of elements or objects. Vectors split into "atomic" vectors, where every object needs to have the same "type", and `list`s that can hold anything:
+
+<center>
+![](../assets/vectors.png){width=500px}
+</center>
+
+All the columns in `gapminder` are "atomic" vectors: they all hold elements of the same type. There is a number of different data types in R:
+
+<center>
+![](../assets/atomic_vectors.png){width=500px}
+</center>
+
+* Logical `<lgl>`: `TRUE` or `FALSE`.
+* Numeric `<num>`: Numbers.
+  - Integer `<int>`: whole numbers
+  - Double `<dbl>`: numbers with decimal places (allowed) ("double-precision floating point")
+* Character `<chr>`: strings (words or characters, like "aaa")
+* Factor `<fct>`: Categorical data
+  - Unordered
+  - Ordered
+* Date `<date>`: Dates (day-accurate)
+* POSIXct `<dttm>` or `<POSIXct>`: Date-time with (sub-)second accuracy
+
+Atomic vectors are created with `c()` ("combine"), and R will infer the type automatically:
+
+```{r}
+vector_1 <- c(1:4) # read "1 to 4"
+typeof(vector_1)
+vector_2 <- c("abc", "a word", "this is a really long sentence")
+typeof(vector_2)
+```
+
+You can always check the data type of a vector with `typeof()`, check whether it is a specific type with `is.*()`, e.g. `is.character()`.
+
+Let's take a look lists which allow us to store heterogenous objects:
+
+<center>
+![](../assets/lists.png){width=500px}
+</center>
+
+* Data frame `data.frame`: Strictly speaking, a data frame is a list of atomic vectors of the same length.
+* Tibble `tibble`, `tbl`, `tbl_df`: An extension of the data frame (which prints nicer and is a bit more coherent) (think of "tibble" as "table"). 
+
+...most of the time, you will probably be working with data frames/tibbles. Data frames are created with `data.frame()`, `tibble()`, `as.data.frame()` or `as_tibble()`. You can access the individual atomic vectors inside a data frame with `$` or `[[` like this:
+
+```{r eval=FALSE}
+gapminder$gdpPercap
+gapminder[["gdpPercap"]]
+```
+
+## Objects vs. functions
+
+You can apply functions to objects, like `mean()` or `median()` which do something to the objects:
+
+```{r}
+mean(gapminder$gdpPercap)
+median(gapminder$gdpPercap)
+```
+
+Fundamentally:
+
+> Everything that exists in R is an object. Everything that happens is a function call. - John M. Chambers
+
+Enough theory, let's work with some data.

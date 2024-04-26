@@ -13,6 +13,8 @@ knitr::opts_chunk$set(
   echo = TRUE, message = FALSE, warning = FALSE,
   collapse = TRUE, comment = "#>"
 )
+
+options(bitmapType='cairo')
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -42,19 +44,19 @@ A heuristic for thinking about statistical visualizations. What is a visualizati
 
 ## How it translates to code
 
-We work in layers:
+We work in layers: just calling `ggplot` creates an empty base layer:
 
 ```{r}
 ggplot()
 ```
 
-Adding data & mapping:
+Adding data & mappings for the axes:
 
 ```{r}
 ggplot(data = gm, mapping = aes(x = gdpPercap, y = lifeExp))
 ```
 
-Adding geometric objects:
+Adding "geometric objects" (`geom_*()`s) to represent data points (here: points):
 
 ```{r}
 gm |> 
@@ -73,11 +75,7 @@ gm |>
 * **Exercise:** Recreate the above plot, and map `size` to the countries' population (`pop`)! *Bonus:* Do you notice anything that could be problematic?
 
 ```{r}
-gm |> 
-  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
-  geom_point()
 
-# Bonus: Big countries may now obscure small countries!
 ```
 
 If we set aesthetic attributes outside `aes()`, they take on static values. For example, `alpha` determines the opaqueness of objects:
@@ -88,12 +86,35 @@ gm |>
   geom_point(alpha = 0.5)
 ```
 
+Let's work on those labels; currently, legend labels for `pop` and axis labels for `gdpPercap` look... unfortunate. You can fix this using `scale_*`-layers and the `scales`-package:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_currency())
+```
+
+We could also try projecting GDP on a logarithmic scale given its distribution (change normal `_continuous` scale to `_log10`:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_log10(labels = scales::label_currency())
+```
+
+
 You can also set labels for axis & legend using `labs()`:
 
 ```{r}
 gm |> 
   ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
   geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_currency()) +
   labs(
     title = "GDP & Life Expectancy", 
     subtitle = "...for countries from 5 continents",
@@ -110,6 +131,8 @@ gm |>
 gm |> 
   ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
   geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_currency()) +
   labs(
     title = "GDP & Life Expectancy", 
     subtitle = "...for countries from 5 continents",
@@ -149,14 +172,87 @@ gapminder |>
   geom_boxplot()
 ```
 
+## Combining geoms
+
+You can also just slap multiple geoms on top of each other (they will be drawn in the order they are specified in the code):
+
+```{r}
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year)) +
+  geom_violin(alpha = 0.5) +
+  geom_boxplot(fill = "grey") +
+  geom_point(position = position_jitter(width = 0.3), alpha = 0.2)
+```
+
+For a more complicated example, consider our previous plot:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_currency()) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal()
+```
+
+We can also overlay multiple geoms (they will be drawn in the order in which they are specified). Let's add a trend line. Be wary of which `aes()` belong to which geom:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_line(stat = "smooth", method = stats::loess, linetype = "dashed", color = "grey", size = 1) +
+  # ^ Alternatively, look into geom_smooth (can e.g. also display confidence interval)
+  geom_point(aes(color = continent, size = pop), alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_comma()) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal()
+```
+
+Or linear & by continent:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_line(stat = "smooth", method = stats::lm, linetype = "dashed", size = 1, alpha = 0.3) +
+  geom_point(aes(size = pop), alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_comma()) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal()
+```
+
 ## Wraps
 
-Let's say you wanted to make the last plot *by continent*. Would you have to `filter()` and make plots for all continents separately? There is of course a smarter way: we can "wrap" the plot by continent:
+Let's say you wanted to plot the distribution of life expectancy every year *by continent*. Would you have to `filter()` and make plots for all continents separately? There is of course a smarter way: we can "wrap" the plot by continent:
 
 ```{r}
 gapminder |> 
   ggplot(aes(x = year, y = lifeExp, group = year, fill = continent)) +
   geom_boxplot() +
+  theme_minimal() +
   facet_wrap(~continent)
 ```
 
@@ -176,20 +272,7 @@ gapminder |>
   )
 ```
 
-Using the `scales`-package, we can also nicely format our axis labels (useful especially if you have things like percentages (`scales::label_percent()`) or very large numbers (`scales::label_comma()` or `scales::label_scientific()`)):
-
-```{r}
-gapminder |> 
-  filter(country == "Germany") |> 
-  ggplot(aes(x = year, y = gdpPercap)) +
-  geom_line() +
-  theme_minimal() +
-  labs(title = "Germany's GDP p.C. over time") +
-  scale_y_continuous(labels = scales::label_comma()) 
-# ^ or even better: scales::label_currency()
-```
-
-Inside ggplot2's `scale_*`-functions, you can also change things like color and fill scales. Recall our original plot:
+# Color & fill scales
 
 ```{r}
 gm |> 
@@ -229,13 +312,21 @@ gm |>
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   # ^ You can also change horizontal (hjust) and vertical (vjust) alignment!
-  scale_color_viridis_d(option = "turbo") +
   scale_x_continuous(labels = scales::label_currency()) +
   scale_size_continuous(labels = scales::comma_format())
-
-# Also works for `aes()` other than axes (here: changes the labeling of the "size"
-# mapping in the legend).
 ```
+
+# Exercise time
+
+Load the ["Palmer's Penguins" data set](https://allisonhorst.github.io/palmerpenguins/). Make visualizations to explore the data. For example, look at `bill_length_mm` and `bill_depth_mm` by `species` or `body_mass_g` by `species` and `sex`, or any other relationship!
+
+```{r}
+# install.packages("palmerpenguins")
+library(palmerpenguins)
+
+penguins
+```
+
 
 # Bonus: Animations
 
@@ -253,14 +344,18 @@ animation <-
   # First the plot:
   
   gapminder |> # Notice we use gapminder (the data for all years)!
-  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
-  geom_point(alpha = 0.7) +
+  
+  # First we specify the basic plot to be drawn:
+  
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_line(stat = "smooth", method = stats::lm, lty = "dashed", size = 1, color = "lightgrey") +
+  geom_point(aes(color = continent, size = pop), alpha = 0.7) +
   labs(
     title = "GDP & Life Expectancy", 
     # We change the subtitle to show the Years during the animation.
     # You can access the current frame (year) with `closest_state`
     subtitle = "Year: { closest_state }",
-    x = "GDP p.C.", 
+    x = "GDP p.C. (Log10)", 
     y = "Life Expectancy (Years)",
     color = "Continent", 
     size = "Population",
@@ -268,13 +363,13 @@ animation <-
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-  scale_x_continuous(labels = scales::label_currency()) +
+  scale_x_log10(labels = scales::label_currency()) +
   scale_size_continuous(labels = scales::comma_format()) +
   
-  # Then what variable to animate/transition on:
+  # Then what variable to animate/transition on (and how to transition):
   
   transition_states(states = year, transition_length = 2, state_length = 1) +
-  ease_aes('linear') +
+  ease_aes() +
   exit_fade()
 ```
 
