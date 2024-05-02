@@ -1,0 +1,157 @@
+---
+title: "Data Wrangling"
+author: "Lennart Kasserra"
+institute: "CorrelAid"
+format: 
+  revealjs:
+    theme: [default, custom.scss]
+    fontsize: 30px
+    slide-level: 1
+    scrollable: true
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+execute:
+  eval: false
+  message: false
+  warning: false
+  collapse: true
+  echo: true
+  comment: "#>"
+date: "2024-04-22"
+---
+
+# Setup
+
+```{r}
+#| eval: true
+library(dplyr)
+library(tidyr)
+
+bigfoot <- readr::read_csv(here::here("data/bigfoot.csv"))
+```
+
+# Motivation
+
+So far we have taken the data set at face value; but if we explore we may find some issues. For example: what is "Unknown" for the season?
+
+```{r}
+#| eval: true
+
+bigfoot |> count(season)
+```
+
+# Nonsensical records & missing values {.scrollable}
+
+The easiest way of dealing with this would be to convert season to `NA` if it is "Unknown":
+
+```{r}
+#| eval: true
+bigfoot |> 
+  mutate(season = season |> na_if("Unknown")) |> 
+  count(season)
+```
+
+But it seems for some of the unknown we actually have a date:
+
+```{r}
+#| eval: true
+bigfoot |> 
+  filter(season == "Unknown", !is.na(date)) |> 
+  select(date, season)
+```
+
+# Nonsensical records & missing values: imputation
+
+Let's break the problem down (one way):
+
+* **Imputing season from date:**
+  1. Extract month from date
+  2. Set season to e.g. fall if month is october or november, june to september would be summer, etc. etc.
+  
+...but how?
+  
+# Excourse: vectorized control flow
+
+* You have seen `if_else()` earlier 
+
+* An extension to it with more conditions is `case_when()`:
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+if (condition) {
+  do_thing()
+} else if (other_condition) {
+  do_other_thing()
+} else {
+  do_something_else()
+}
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+case_when(
+  condition ~ do_thing(),
+  other_condition ~ do_other_thing(),
+  .default = do_something_else()
+)
+```
+
+:::
+
+::::
+
+# Nonsensical records & missing values: imputation
+
+Back to our problem:
+
+```{r}
+bigfoot |> 
+  mutate(
+    # First add the month:
+    month = lubridate::month(date),
+    # Then impute:
+    season = case_when(
+      season != "Unknown" ~ season, # if season not unkown just keep it
+      month %in% c(3:5) ~ "Spring", # otherwise step through these...
+      month %in% c(6:9) ~ "Summer",
+      month %in% c(10:11) ~ "Fall",
+      month %in% c(12, 1, 2) ~ "Winter",
+      .default = NA                 # ...and to this if no condition matches.
+    )
+  )
+```
+
+# Handling missing values {.scrollable}
+
+Drop all missing values:
+
+```{r}
+bigfoot |> drop_na()
+```
+
+Drop obs. where a certain variable is missing:
+
+```{r}
+bigfoot |> filter(!is.na(season))
+```
+
+Drop obs. where a of a number of variables is missing:
+
+```{r}
+bigfoot |> filter(!if_any(c(season, starts_with("temperature")), is.na))
+```
+
+*i.e. don't keep row `if_any()` of these columns are missing (`NA`)!* You can also reverse this:
+
+```{r}
+bigfoot |> filter(if_all(c(season, starts_with("temperature")), \(x) !is.na(x)))
+```
+
+*i.e. only keep row `if_all()` of these variables have observations (are not missing)*

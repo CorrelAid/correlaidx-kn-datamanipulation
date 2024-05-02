@@ -6,6 +6,7 @@ format:
   revealjs:
     theme: [default, custom.scss]
     fontsize: 30px
+    embed-resources: true
 editor_options: 
   chunk_output_type: console
 execute:
@@ -64,35 +65,58 @@ If you haven't already:
 
 # Course outline
 
-**Day 1:**
+* **Day 1:** Data Manipulation
+  - Intro to the tidyverse (`dplyr`-verbs etc.)
+  - Joining & data wrangling
+  - Basic modelling & presentation of results
 
-1. Introduction to the Tidyverse
-  * `dplyr` verbs
-2. Data Visualization with `ggplot2`
+* **Day 2:** Data Visualization
+  - `ggplot2`
+  - *Bonus:* maps with `sf`, interactive visualization with `plotly`, animations with `gganimate`.
 
-**Day 2:**
+# Tidyverse
 
-3. Setting up reproducible projects
-4. Exploratory data analysis
-5. Data wrangling
+:::: {.columns}
 
-# Tidy data
+::: {.column width="60%"}
 
-![*Artwork by* [*@allison_horst*](https://twitter.com/allison_horst)](../assets/tidy_data_definition.jpg)
+*"The [tidyverse](https://www.tidyverse.org/) is an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures."*
 
-# Tidy data
+You can install all packages that belong to the tidyverse with:
 
-![*Artwork by* [*@allison_horst*](https://twitter.com/allison_horst)](../assets/tidy_datasets_are_alike.jpg)
+```{r}
+install.packages("tidyverse")
+```
 
+:::
 
-# Tidy data
+::: {.column width="40%"}
 
-![*Artwork by* [*@allison_horst*](https://twitter.com/allison_horst)](../assets/tidy_vs_untidy.jpg)
+![](../assets/tidyverse.png)
 
-# Tidy data
+:::
 
-Our goal for today is to learn the basic toolset for tidy data, including common manipulations & visualizations.
+::::
 
-Tomorrow we will go beyond and discuss how to make untidy datasets tidy.
+# Tidyverse vs. base R
 
-* This course is unfortunately *very* condensed, but please feel free to still ask questions if you don't understand something or would like to know something that was not mentioned!
+:::: {.columns}
+
+::: {.column width="60%"}
+
+In this course we teach the tidyverse because...
+
+* `tidyverse`-esque code usually more readable
+* Easier to pick up on for beginners
+* Coherent
+* Often [faster](https://www.r-bloggers.com/2022/10/efficiency-comparison-of-dplyr-and-tidyr-functions-vs-base-r/) than base R
+
+:::
+
+::: {.column width="40%"}
+
+![](../assets/bell_curve_tidyverse.png)
+
+:::
+
+::::
