@@ -52,6 +52,9 @@ Data comes from the [Bigfoot Field Researchers Organization (BFRO)](https://www.
 ```{r}
 #| eval: true
 bigfoot <- readr::read_csv(here::here("data/bigfoot.csv"))
+
+# Or if that's not working:
+bigfoot <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-13/bigfoot.csv")
 ```
 
 :::

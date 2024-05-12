@@ -7,6 +7,7 @@ format:
     theme: [default, custom.scss]
     fontsize: 30px
     slide-level: 1
+    smaller: true
     scrollable: true
     embed-resources: true
 editor_options: 
@@ -17,7 +18,6 @@ execute:
   warning: false
   collapse: true
   echo: true
-  comment: "#>"
 date: "2024-04-22"
 ---
 
@@ -29,6 +29,9 @@ library(dplyr)
 library(tidyr)
 
 bigfoot <- readr::read_csv(here::here("data/bigfoot.csv"))
+
+# Or if that's not working:
+bigfoot <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-13/bigfoot.csv")
 ```
 
 # Motivation
@@ -37,7 +40,7 @@ So far we have taken the data set at face value; but if we explore we may find s
 
 ```{r}
 #| eval: true
-
+#| collapse: true
 bigfoot |> count(season)
 ```
 
@@ -47,6 +50,7 @@ The easiest way of dealing with this would be to convert season to `NA` if it is
 
 ```{r}
 #| eval: true
+#| collapse: true
 bigfoot |> 
   mutate(season = season |> na_if("Unknown")) |> 
   count(season)
@@ -56,6 +60,7 @@ But it seems for some of the unknown we actually have a date:
 
 ```{r}
 #| eval: true
+#| collapse: true
 bigfoot |> 
   filter(season == "Unknown", !is.na(date)) |> 
   select(date, season)
@@ -69,44 +74,6 @@ Let's break the problem down (one way):
   1. Extract month from date
   2. Set season to e.g. fall if month is october or november, june to september would be summer, etc. etc.
   
-...but how?
-  
-# Excourse: vectorized control flow
-
-* You have seen `if_else()` earlier 
-
-* An extension to it with more conditions is `case_when()`:
-
-:::: {.columns}
-
-::: {.column width="50%"}
-
-```{r}
-if (condition) {
-  do_thing()
-} else if (other_condition) {
-  do_other_thing()
-} else {
-  do_something_else()
-}
-```
-
-:::
-
-::: {.column width="50%"}
-
-```{r}
-case_when(
-  condition ~ do_thing(),
-  other_condition ~ do_other_thing(),
-  .default = do_something_else()
-)
-```
-
-:::
-
-::::
-
 # Nonsensical records & missing values: imputation
 
 Back to our problem:
@@ -118,7 +85,7 @@ bigfoot |>
     month = lubridate::month(date),
     # Then impute:
     season = case_when(
-      season != "Unknown" ~ season, # if season not unkown just keep it
+      season != "Unknown" ~ season, # if season not unknown just keep it
       month %in% c(3:5) ~ "Spring", # otherwise step through these...
       month %in% c(6:9) ~ "Summer",
       month %in% c(10:11) ~ "Fall",
@@ -127,6 +94,10 @@ bigfoot |>
     )
   )
 ```
+
+# `case_when()`
+
+![](../assets/case_when.png)
 
 # Handling missing values {.scrollable}
 
@@ -139,19 +110,267 @@ bigfoot |> drop_na()
 Drop obs. where a certain variable is missing:
 
 ```{r}
+bigfoot |> drop_na(season)
+
+# Or use `filter()`
 bigfoot |> filter(!is.na(season))
 ```
 
 Drop obs. where a of a number of variables is missing:
 
 ```{r}
+bigfoot |> drop_na(season, starts_with("temperature"))
+
+# Or:
 bigfoot |> filter(!if_any(c(season, starts_with("temperature")), is.na))
+# ^ i.e. don't keep row `if_any()` of these columns are missing (`NA`)!
 ```
 
-*i.e. don't keep row `if_any()` of these columns are missing (`NA`)!* You can also reverse this:
+# Real world data is... messy {.smaller}
+
+:::: {.columns}
+
+::: {.column width="60%"}
 
 ```{r}
-bigfoot |> filter(if_all(c(season, starts_with("temperature")), \(x) !is.na(x)))
+#| eval: true
+#| collapse: true
+
+fertility <- readr::read_csv(here::here("data", "wbi_fertility.csv"))
+fertility
 ```
 
-*i.e. only keep row `if_all()` of these variables have observations (are not missing)*
+:::
+
+::: {.column width="40%"}
+
+![](../assets/dog_react.gif)
+
+:::
+
+::::
+
+# Reshaping / pivotting {.scrollable}
+
+* The problem is that this data is *wide* (compared to the *long* format we like to work with).
+
+Use `pivot_longer()` to fix this:
+
+```{r}
+#| eval: true
+#| collapse: true
+fertility <- 
+  fertility |> 
+  pivot_longer(-starts_with("Country"), names_to = "year", values_to = "fertility")
+
+fertility
+```
+
+* Take all columns that don't start with "Country", put their names into column called `year`, and the values into a column called `fertility`.
+
+# Exercise time
+
+* Figure out how to use `pivot_wider()` to reverse this (**Tip:** you can always access the documentation for a function, with `?`, e.g. here `?pivot_wider`).
+
+# Joining
+
+We now have our data on fertility set, but we want to join it with data on female education to analyze the relationship between the two.
+
+* How do we "join" (or "merge") two different dataframes?
+
+# Joining
+
+1. Get both of them into R & into the right format
+
+# Joining
+
+```{r}
+#| eval: true
+educ <- readr::read_csv(here::here("data/wbi_education.csv"))
+educ <- 
+  educ |> 
+  pivot_longer(-starts_with("Country"), names_to = "year", values_to = "out_of_school") |> 
+  select(-CountryName) # also in the other one
+```
+
+# Joining
+
+1. Get both of them into R & into the right format
+2. Decide on which type of join to do
+
+# Joining: types of joins
+
+![](../assets/joins.png)
+
+# Joining
+
+1. Get both of them into R & wrangle them into the right format
+2. Decide on which type of join to do
+3. *Join!*
+
+# Joining
+
+Here, we decide on an `full_join()`, initially keeping all observations:
+
+```{r}
+#| eval: true
+#| warning: false
+#| collapse: true
+
+full <- 
+  fertility |> 
+  full_join(educ, by = c("CountryCode", "year")) |> # <-
+  mutate(across(c(fertility, out_of_school), as.numeric)) |> # make sure they have the right type
+  drop_na(fertility, out_of_school)
+
+full
+```
+
+# Modelling & presenting results
+
+A key part of your thesis or term papers will probably be to fit a model & present the results.
+
+# Modelling & presenting results
+
+Functionality for many simple model types is built into R (like `lm()` to fit a linear model)
+
+```{r}
+#| eval: true
+model <- lm(fertility ~ out_of_school, data = full)
+```
+
+# Modelling & presenting results
+
+Now we are left with a model-object; we can inspect the results in R using `summary()`:
+
+```{r}
+#| eval: true
+#| collapse: true
+
+summary(model)
+```
+
+# Modelling & presenting results
+
+To present results, look into `stargazer` or `modelsummary`
+
+```{r}
+#| eval: true
+#| results: asis
+
+stargazer::stargazer(model, type = "html", header = FALSE)
+```
+
+# Modelling & presenting results
+
+For most other model types, R has some kind of package. Here is for example a one-way fixed-effects model using `fixest`:
+
+```{r}
+#| eval: true
+#| collapse: true
+model <- fixest::feols(
+  fertility ~ out_of_school,
+  data = full,
+  fixef = "CountryCode",
+  vcov = ~CountryCode
+)
+
+summary(model)
+```
+
+# Modelling & presenting results
+
+An example of `modelsummary`:
+
+```{r}
+#| eval: true
+model |> 
+  list("Fertility" = _) |> 
+  modelsummary::modelsummary(
+    stars = c("***" = 0.01, "**" = 0.05, "*" = 0.1),
+    coef_map = c("out_of_school" = "Girls out of school")
+  )
+```
+
+# Modelling & presenting results
+
+Back to our original research question: what predicts reliable Bigfoot sightings?
+
+1. Cleaning:
+
+```{r}
+#| eval: true
+
+bigfoot <- 
+  bigfoot |> 
+  mutate(
+    # Temperature to celsius:
+    temp_celsius = (temperature_mid - 32) / 1.8,
+    # Construct outcome:
+    reliable_sighting = if_else(classification == "Class A", 1, 0)
+  )
+```
+
+# Modelling & presenting results
+
+2. Exploring:
+
+```{r}
+#| eval: true
+#| collapse: true
+
+bigfoot |> 
+  count(reliable_sighting)
+```
+
+# Modelling & presenting results
+
+3. Modelling
+
+```{r}
+#| eval: true
+#| collapse: true
+
+bigfoot_model <- lm(
+  reliable_sighting ~ temp_celsius + humidity + moon_phase + cloud_cover + uv_index,
+  data = bigfoot
+)
+
+summary(bigfoot_model)
+```
+
+# Presenting
+
+```{r}
+#| eval: true
+bigfoot_model |> 
+  list("Reliable Sighting" = _) |> 
+  modelsummary::modelsummary(
+    stars = c("***" = 0.01, "**" = 0.05, "*" = 0.1),
+    coef_map = c(
+      "temp_celsius" = "Temperature (C)",
+      "humidity" = "Humidity",
+      "moon_phase" = "Moon Phase",
+      "cloud_cover" = "Cloud Cover",
+      "uv_index" = "UV Index",
+      "Intercept" = "Constant"
+    )
+  )
+```
+
+# Final exercise
+
+There is data on UFO-sightings attached:
+
+```{r}
+#| eval: true
+#| collapse: true
+ufo <- readr::read_csv(here::here("data/ufo_sightings.csv"))
+ufo
+```
+
+* Explore the data
+  - What is the most common sighting (`shape`)?
+  - What `country` has the most sightings? Which `state` has the most?
+  - What year had the most sightings (*hint:* use `lubridate::year()` to extract the year from a date)
+  - What were the top 10 countries/years?
