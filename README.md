@@ -18,12 +18,6 @@ git clone https://github.com/CorrelAid/correlaidx-kn-datamanipulation
 
 ## Workshop (Preliminary)
 
-**Day 1:**
+* **Day 1:** Data manipulation
 
-1. Intro: dplyr verbs & piping
-2. Visualizations: brief introduction to `ggplot2` 
-
-**Day 2:**
-
-3. Importing data & exploratory analysis
-4. Advanced manipulations: reshaping & merging data
+* **Day 2:** Data visualization

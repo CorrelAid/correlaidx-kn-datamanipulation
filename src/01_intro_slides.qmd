@@ -1,0 +1,122 @@
+---
+title: "Data Manipulation and Visualization with R"
+author: "Lennart Kasserra"
+institute: "CorrelAid"
+format: 
+  revealjs:
+    theme: [default, custom.scss]
+    fontsize: 30px
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+execute:
+  eval: false
+  message: false
+  warning: false
+  collapse: true
+  echo: true
+  comment: "#>"
+date: "2024-04-22"
+---
+
+# Welcome
+
+Welcome to the follow-up to the "Intro to R"! If you see this you have managed to download the files from GitHub, which already makes you smarter than tolly500:
+
+<center>
+![](../assets/github.jpg)
+</center>
+
+# Setup time
+
+:::: {.columns}
+
+::: {.column width="40%"}
+
+![](../assets/50cent_meme.jpg)
+
+:::
+
+::: {.column width="60%"}
+
+::: {style="font-size: 60%;"}
+
+If you haven't already:
+
+1. Install R:
+  - [Windows](https://cran.r-project.org/bin/windows/base/)
+  - [MacOS](https://cran.r-project.org/bin/macosx/) (make sure you select the right one based on whether you have an "old" intel mac or a new Apple silicon (M1/M2) mac)
+  - Linux: from package manager (probably either `R` or `r-base`)
+
+2. Install RStudio [from the official website](https://posit.co/download/rstudio-desktop/)
+
+3. Install packages: 
+
+  - once you are inside RStudio, head to the console (the little window that says "console"), enter `install.packages(c("tidyverse", "gapminder", "here", "markdown", "rmarkdown"))` and hit Enter.
+  - Enjoy epic hacker moment
+  
+4. Make yourself feel at home: If you're done early, under Tools > Global Options > Appearance you can change the theme etc
+
+:::
+
+:::
+
+::::
+
+# Course outline
+
+* **Day 1:** Data Manipulation
+  - Intro to the tidyverse (`dplyr`-verbs etc.)
+  - Joining & data wrangling
+  - Basic modelling & presentation of results
+
+* **Day 2:** Data Visualization
+  - `ggplot2`
+  - *Bonus:* maps with `sf`, interactive visualization with `plotly`, animations with `gganimate`.
+
+# Tidyverse
+
+:::: {.columns}
+
+::: {.column width="60%"}
+
+*"The [tidyverse](https://www.tidyverse.org/) is an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures."*
+
+You can install all packages that belong to the tidyverse with:
+
+```{r}
+install.packages("tidyverse")
+```
+
+:::
+
+::: {.column width="40%"}
+
+![](../assets/tidyverse.png)
+
+:::
+
+::::
+
+# Tidyverse vs. base R
+
+:::: {.columns}
+
+::: {.column width="60%"}
+
+In this course we teach the tidyverse because...
+
+* `tidyverse`-esque code usually more readable
+* Easier to pick up on for beginners
+* Coherent
+* Often [faster](https://www.r-bloggers.com/2022/10/efficiency-comparison-of-dplyr-and-tidyr-functions-vs-base-r/) than base R
+
+:::
+
+::: {.column width="40%"}
+
+![](../assets/bell_curve_tidyverse.png)
+
+:::
+
+::::

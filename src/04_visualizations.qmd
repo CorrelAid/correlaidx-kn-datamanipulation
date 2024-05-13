@@ -1,0 +1,541 @@
+---
+title: "Visualizations"
+author: "Lennart Kasserra"
+institute: "CorrelAid"
+format: 
+  revealjs:
+    theme: [default, custom.scss]
+    fontsize: 30px
+    slide-level: 1
+    smaller: true
+    scrollable: true
+    embed-resources: true
+    auto-stretch: false
+editor_options: 
+  chunk_output_type: console
+execute:
+  message: false
+  warning: false
+  collapse: true
+  echo: true
+date: "2024-04-22"
+---
+
+
+# Setup
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+Using data from Gapminder this time, which comes as an R-package:
+
+```{r}
+library(gapminder)
+data("gapminder")
+
+gm <- gapminder |> filter(year == 2007) # just use one year as subset for now
+```
+
+# Visualizations with `ggplot2`:
+
+* **gg** = "**G**rammar of **g**raphics
+
+A heuristic for thinking about statistical visualizations. What is a visualization?
+
+> A *mapping* of *data* to *aesthetic attributes* (color, shape, size...) of *geometric objects* (points, lines, bars...)
+
+# How it translates to code: layers
+
+We work in layers: just calling `ggplot` creates an empty base layer:
+
+```{r}
+ggplot()
+```
+
+# How it translates to code: data & mappings
+
+Adding data & mappings for the axes:
+
+```{r}
+ggplot(data = gm, mapping = aes(x = gdpPercap, y = lifeExp))
+```
+
+# How it translates to code: `geom_*`s
+
+Adding "geometric objects" (`geom_*()`s) to represent data points (here: points):
+
+```{r}
+#| code-line-numbers: "3"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + # adding layers with "+"
+  geom_point()
+```
+
+# How it translates to code: other `aes()`
+
+There are more attributes, like `color`:
+
+```{r}
+#| code-line-numbers: "2"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_point()
+```
+
+# Exercise
+
+* **Exercise:** Recreate the above plot, and map `size` to the countries' population (`pop`)! *Bonus:* Do you notice anything that could be problematic?
+
+# How it translates to code: static aesthetics
+
+If we set aesthetic attributes outside `aes()`, they take on static values. For example, `alpha` determines the opaqueness of objects:
+
+```{r}
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5)
+```
+
+# Axes and labels
+
+Let's work on those labels; currently, legend labels for `pop` and axis labels for `gdpPercap` look... unfortunate. You can fix this using `scale_*`-layers and the `scales`-package:
+
+```{r}
+#| code-line-numbers: "4-5"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_currency())
+```
+
+# Axes and labels
+
+We could also try projecting GDP on a logarithmic scale given its distribution (change normal `_continuous` scale to `_log10`:
+
+```{r}
+#| code-line-numbers: "5"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_log10(labels = scales::label_currency())
+```
+
+# Axes and labels: `labs()`
+
+You can also set labels for axis & legend using `labs()`:
+
+```{r}
+#| code-line-numbers: "6-13"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_currency()) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  )
+```
+
+# Themes
+
+`ggplot2` also has themes:
+
+```{r}
+#| code-line-numbers: "14"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_currency()) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal()
+```
+
+# Other `geom_*`s
+
+Lines (`geom_line()`):
+
+```{r}
+#| code-line-numbers: "3-4"
+gapminder |> 
+  filter(country == "Germany") |> 
+  ggplot(aes(x = year, y = lifeExp)) +
+  geom_line()
+```
+
+# Other `geom_*`s
+
+Bars (`geom_bar()` & `geom_col()` (= columns, aka easier to use bars)):
+
+```{r}
+#| code-line-numbers: "3-4"
+gapminder |> 
+  filter(country == "Germany") |> 
+  ggplot(aes(x = year, y = gdpPercap)) +
+  geom_col()
+```
+
+# Other `geom_*`s
+
+Violin- & Boxplots (`geom_violin()` & `geom_boxplot()`)
+
+```{r}
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year)) +
+  geom_boxplot()
+```
+
+# Combining geoms
+
+You can also just slap multiple geoms on top of each other (they will be drawn in the order they are specified in the code):
+
+```{r}
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year)) +
+  geom_violin(alpha = 0.5) +
+  geom_boxplot(fill = "grey") +
+  geom_point(position = position_jitter(width = 0.3), alpha = 0.2)
+```
+
+# Combining geoms
+
+Let's add a trend line to our original plot. This may get complicated for more complex plots; be mindful of which `aes()` belong to which geom:
+
+```{r}
+#| code-line-numbers: "2-5"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) + 
+  geom_line(stat = "smooth", method = stats::loess, linetype = "dashed", color = "grey", size = 1) +
+  # ^ Alternatively, look into geom_smooth (can e.g. also display confidence interval)
+  geom_point(aes(color = continent, size = pop), alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_comma()) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal()
+```
+
+# Combining geoms
+
+Or linear & by continent:
+
+```{r}
+#| code-line-numbers: "3"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  geom_line(stat = "smooth", method = stats::lm, linetype = "dashed", size = 1, alpha = 0.3) +
+  geom_point(aes(size = pop), alpha = 0.5) +
+  scale_size_continuous(labels = scales::label_comma()) +
+  scale_x_continuous(labels = scales::label_comma()) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal()
+```
+
+# Wraps
+
+Let's say you wanted to plot the distribution of life expectancy every year *by continent*. Would you have to `filter()` and make plots for all continents separately? There is of course a smarter way: we can "wrap" the plot by continent:
+
+```{r}
+#| code-line-numbers: "5"
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year, fill = continent)) +
+  geom_boxplot() +
+  theme_minimal() +
+  facet_wrap(~continent)
+```
+
+# Axes, scales & `theme()`-elements
+
+All visual elements of the plot can be changed inside `theme()` (the ggplot2-internal syntax may seem a bit strange at first):
+
+```{r}
+#| code-line-numbers: "5-8"
+gapminder |> 
+  ggplot(aes(x = year, y = lifeExp, group = year, fill = continent)) +
+  geom_boxplot() +
+  facet_wrap(~continent) +
+  theme(
+    axis.text.x = element_text(angle = 45), 
+    legend.position = "bottom"
+  )
+```
+
+# Color & fill scales
+
+```{r}
+#| code-line-numbers: "13-15"
+gm |> 
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + 
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "GDP & Life Expectancy", 
+    subtitle = "...for countries from 5 continents",
+    x = "GDP p.C.", 
+    y = "Life Expectancy (Years)",
+    color = "Continent", 
+    size = "Population"
+  ) +
+  theme_minimal() +
+  scale_color_viridis_d()
+  # Or others:
+  #scale_color_brewer(palette = "Accent")
+```
+
+If you are interested in visualizations, you can read up on color & fill scales and color theory for ggplot2 [here](https://ggplot2-book.org/scales-colour).
+
+# Exercise time
+
+Load the ["Palmer's Penguins" data set](https://allisonhorst.github.io/palmerpenguins/). Make visualizations to explore the data. For example, look at `bill_length_mm` and `bill_depth_mm` by `species` or `body_mass_g` by `species` and `sex`, or any other relationship!
+
+```{r}
+#| collapse: true
+# install.packages("palmerpenguins")
+library(palmerpenguins)
+
+penguins
+```
+
+# Visualizing results
+
+Here we will look at how to visualize model results. Remember our model from last time:
+
+```{r}
+bigfoot <- readr::read_csv(here::here("data/bigfoot.csv"))
+
+bf_model <- 
+  bigfoot |> 
+  mutate(
+    # Temperature to celsius:
+    temp_celsius = (temperature_mid - 32) / 1.8,
+    # Construct outcome:
+    reliable_sighting = if_else(classification == "Class A", 1, 0)
+  ) |> 
+  lm(
+    reliable_sighting ~ temp_celsius + humidity + moon_phase + cloud_cover + uv_index,
+    data = _
+  )
+```
+
+# Visualizing results
+
+The first step is to get the model object into a proper data frame we can feed into ggplot:
+
+```{r}
+#| collapse: true
+bf_model |> 
+  broom::tidy()
+```
+
+# Visualizing results
+
+We now use mutate to add upper & lower bounds of the confidence interval:
+
+```{r}
+#| collapse: true
+#| code-line-numbers: "3-6"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error
+  )
+```
+
+# Visualizing results
+
+We also don't need the y-intercept:
+
+```{r}
+#| collapse: true
+#| code-line-numbers: "7"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error
+  ) |> 
+  filter(term != "(Intercept)")
+```
+
+# Visualizing results
+
+Make the actual plot:
+
+```{r}
+#| code-line-numbers: "8-9"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error
+  ) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = term, y = estimate)) +
+  geom_pointrange(aes(ymin = lower, ymax = upper))
+```
+
+# Visualizing results
+
+Add a line to show where 0 is:
+
+```{r}
+#| code-line-numbers: "9"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error
+  ) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = term, y = estimate)) +
+  geom_hline(yintercept = 0, lty = "dashed", color = "darkgrey") +
+  geom_pointrange(aes(ymin = lower, ymax = upper))
+```
+
+# Visualizing results
+
+Reorder covariates by effect strength (read: reorder `term` by `estimate`):
+
+```{r}
+#| code-line-numbers: "8"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error
+  ) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = forcats::fct_reorder(term, estimate), y = estimate)) +
+  geom_hline(yintercept = 0, lty = "dashed", color = "darkgrey") +
+  geom_pointrange(aes(ymin = lower, ymax = upper))
+```
+
+# Visualizing results
+
+You could also flip the axis using `coord_flip()`:
+
+```{r}
+#| code-line-numbers: "11"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error
+  ) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = forcats::fct_reorder(term, estimate), y = estimate)) +
+  geom_hline(yintercept = 0, lty = "dashed", color = "darkgrey") +
+  geom_pointrange(aes(ymin = lower, ymax = upper)) +
+  coord_flip()
+```
+
+# Visualizing results
+
+Cosmetics:
+
+```{r}
+#| code-line-numbers: "12-17"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error
+  ) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = forcats::fct_reorder(term, estimate), y = estimate)) +
+  geom_hline(yintercept = 0, lty = "dashed", color = "darkgrey") +
+  geom_pointrange(aes(ymin = lower, ymax = upper)) +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    x = "", 
+    y = "Estimate", 
+    title = "Predictors of reliable bigfoot sightings"
+  )
+```
+
+# Visualizing results
+
+*Bonus:* Add stars for significance:
+
+```{r}
+#| code-line-numbers: "6-11, 17"
+bf_model |> 
+  broom::tidy() |> 
+  mutate(
+    upper = estimate + std.error,
+    lower = estimate - std.error,
+    sig = case_when(
+      p.value < 0.01 ~ "***", 
+      p.value < 0.05 ~ "**", 
+      p.value < 0.1 ~ "*",
+      TRUE ~ ""
+    )
+  ) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = forcats::fct_reorder(term, estimate), y = estimate)) +
+  geom_hline(yintercept = 0, lty = "dashed", color = "darkgrey") +
+  geom_pointrange(aes(ymin = lower, ymax = upper)) +
+  geom_text(aes(label = sig), nudge_x = 0.1) +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    x = "", 
+    y = "Estimate", 
+    title = "Predictors of reliable bigfoot sightings"
+  )
+```
+
+# Visualizing results
+
+**Tips:**
+
+* You can also use `geom_errorbar()`
+* You could modify the `term` column using `stringr` to have nicer names (e.g. "Cloud Cover" instead of "cloud_cover")
+
+# Final exercise
+
+Load the data on Himalaya-expeditions (click [here](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-09-22/readme.md) for more details) again:
+
+```{r}
+#| eval: false
+members <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/members.csv')
+expeditions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/expeditions.csv')
+peaks <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/peaks.csv')
+
+```
+
+* Merge & clean the data (if neccessary)
+* Explore the data
+* Make visualizations
+* Fit a model (e.g. predict whether an expedition member dies)
+* Visualize & communicate your results
